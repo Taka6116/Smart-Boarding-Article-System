@@ -51,7 +51,7 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold" style={{ color: '#33B5E5' }}>
             SBAS
           </h1>
-          <p className="text-sm text-[#64748B] mt-1">Smart Boarding Article System</p>
+          <p className="text-sm font-medium mt-1" style={{ color: '#33B5E5' }}>Smart Boarding Article System</p>
         </div>
         <p className="text-sm text-[#475569] text-center mb-6">
           メールアドレスとパスワードを入力してください

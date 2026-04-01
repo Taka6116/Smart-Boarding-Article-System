@@ -6,23 +6,8 @@ import StepIndicator from '@/components/editor/StepIndicator'
 import type { Step } from '@/lib/types'
 import { getSupervisorBlockHtml } from '@/lib/supervisorBlock'
 
-const DUMMY_ARTICLES = [
-  {
-    date: '2025.12.23',
-    category: '導入事例',
-    title: '【導入事例】eラーニング×集合研修で研修工数を削減した実践プログラム',
-  },
-  {
-    date: '2025.12.12',
-    category: 'お知らせ',
-    title: '【お知らせ】Smart Boarding 新機能リリースのご案内（プレースホルダー）',
-  },
-]
-
-/** 監修者・丸部分のお顔画像（WordPressメディアライブラリ）。プレビューではこのURLを直接表示。 */
 const SUPERVISOR_FACE_IMAGE_URL = 'http://nihon-teikei.co.jp/wp-content/uploads/2026/03/3159097ae625791c1a400e6900330153.png'
 
-/** プレビュー用CTAバナーHTML */
 function getPreviewCtaBannerHtml(): string {
   const cloudFrontUrl = process.env.NEXT_PUBLIC_CLOUDFRONT_URL?.trim()
   const bannerUrl = cloudFrontUrl
@@ -31,24 +16,18 @@ function getPreviewCtaBannerHtml(): string {
   return `<div style="text-align:center;margin:40px 0;padding:0;"><a href="https://www.smartboarding.net/contact/" target="_blank" rel="noopener noreferrer" style="display:inline-block;text-decoration:none;"><img src="${bannerUrl}" alt="Smart Boarding へのお問い合わせ・ご相談" style="max-width:100%;width:700px;height:auto;border:none;border-radius:8px;" loading="lazy" /></a></div>`
 }
 
-/** プレビュー用: CTAバナーを「まとめ」h2の直前に挿入 */
 function insertCtaBannersForPreview(html: string): string {
   const cta = getPreviewCtaBannerHtml()
-
-  // 優先: 「まとめ」を含む h2 タグの直前に挿入
   const matomeRegex = /<h2[^>]*>[^<]*まとめ[^<]*<\/h2>/gi
   const matomeMatch = matomeRegex.exec(html)
   if (matomeMatch) {
     return html.slice(0, matomeMatch.index) + cta + '\n' + html.slice(matomeMatch.index)
   }
-
   const matomeBlockRegex = /<(h2|h3|p)[^>]*>\s*(?:<strong>)?\s*まとめ[\s\S]*?<\/\1>/i
   const matomeBlockMatch = matomeBlockRegex.exec(html)
   if (matomeBlockMatch && matomeBlockMatch.index !== undefined) {
     return html.slice(0, matomeBlockMatch.index) + cta + '\n' + html.slice(matomeBlockMatch.index)
   }
-
-  // フォールバック: 最後の h2 の直前に挿入
   const h2Regex = /<h2[\s>]/gi
   let match: RegExpExecArray | null
   const positions: number[] = []
@@ -59,7 +38,6 @@ function insertCtaBannersForPreview(html: string): string {
     const lastPos = positions[positions.length - 1]!
     return html.slice(0, lastPos) + cta + '\n' + html.slice(lastPos)
   }
-
   return html + '\n' + cta
 }
 
@@ -100,26 +78,22 @@ function formatContent(content: string, imageUrl: string): string {
       flushParagraph()
       continue
     }
-
     if (/^\d+[．.]\s/.test(trimmed) && currentParagraph.length === 0) {
       const text = trimmed.replace(/^\d+[．.]\s*/, '')
       htmlLines.push(`<h2 style="${H2_STYLE}">${applyInlineFormatting(text)}</h2>`)
       continue
     }
-
     if (/^\d+-\d+[．.]\s/.test(trimmed) && currentParagraph.length === 0) {
       const text = trimmed.replace(/^\d+-\d+[．.]\s*/, '').replace(/\*\*(.+?)\*\*/g, '$1')
       htmlLines.push(`<h3 style="${H3_STYLE}">${text}</h3>`)
       continue
     }
-
     if (/^[■▶◆●▼]\s/.test(trimmed)) {
       flushParagraph()
       const text = trimmed.replace(/^[■▶◆●▼]\s*/, '').replace(/\*\*(.+?)\*\*/g, '$1')
       htmlLines.push(`<h3 style="${H3_STYLE}">${text}</h3>`)
       continue
     }
-
     currentParagraph.push(trimmed)
   }
 
@@ -135,19 +109,40 @@ function formatContent(content: string, imageUrl: string): string {
       /14日間無料トライアルはこちら\s+https?:\/\/www\.smartboarding\.net\/trial\/?/g,
       '<a href="https://www.smartboarding.net/trial/" target="_blank" rel="noopener noreferrer" style="color:#33B5E5;text-decoration:underline;">14日間無料トライアルはこちら</a>'
     )
-    .replace(
-      /導入事例はこちらから\s+https?:\/\/nihon-teikei\.co\.jp\/news\/casestudy\/?/g,
-      '<a href="https://www.smartboarding.net/documents/1978/" target="_blank" rel="noopener noreferrer" style="color:#33B5E5;text-decoration:underline;">導入事例はこちらから</a>'
-    )
-    .replace(
-      /待っているだけでオファーが届くM&Aオファーはこちら\s+https?:\/\/nihon-teikei\.com\/ma-offer/g,
-      '<a href="https://www.smartboarding.net/trial/" target="_blank" rel="noopener noreferrer" style="color:#33B5E5;text-decoration:underline;">14日間無料トライアルはこちら</a>'
-    )
 
   bodyHtml = insertCtaBannersForPreview(bodyHtml)
 
   return imageHtml + supervisorBlock + bodyHtml
 }
+
+/* ─────────────────── Header nav items ─────────────────── */
+const NAV_ITEMS = [
+  { label: 'サービスの特徴', href: 'https://www.smartboarding.net/concept/' },
+  { label: '料金', href: 'https://www.smartboarding.net/price/' },
+  { label: '導入事例・活用シーン', href: 'https://www.smartboarding.net/example/' },
+  { label: '無料セミナー', href: 'https://www.smartboarding.net/seminar/' },
+  { label: 'サポートFAQ', href: 'https://www.smartboarding.net/faq/' },
+  { label: 'パートナー制度', href: 'https://www.smartboarding.net/partner/' },
+]
+
+const FOOTER_NAV = [
+  { section: 'サービス', items: ['コンセプト', '活用シーン', 'カスタマイズ'] },
+  { section: 'コンテンツ', items: [] },
+  { section: '料金', items: [] },
+  { section: '導入事例', items: [] },
+  { section: 'サポート', items: ['導入の流れ', 'サポート体制'] },
+  { section: 'FAQ', items: [] },
+  { section: 'コラム', items: [] },
+]
+
+/* ─────────────────── Sidebar banners ─────────────────── */
+const SIDE_BANNERS = [
+  { img: 'https://smartboarding.net/_pack/img/2024common/side-download_banner_blue.png', href: 'https://smartboarding.net/documents/651/' },
+  { img: 'https://smartboarding.net/_pack/img/2024common/side-webinar_banner.png', href: 'https://www.smartboarding.net/webinar/' },
+  { img: 'https://smartboarding.net/_pack/img/2024common/side-mailmag_banner.png', href: 'https://www.training-c.co.jp/ml/' },
+]
+
+/* ─────────────────── Main ─────────────────── */
 
 function PreviewContent() {
   const searchParams = useSearchParams()
@@ -163,12 +158,10 @@ function PreviewContent() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-
     setStorageContent(sessionStorage.getItem('preview_content') || '')
     const id = searchParams.get('articleId')
     let storedImage = ''
     let wp: string | null = null
-
     if (id) {
       try {
         const raw = localStorage.getItem('nas_articles')
@@ -182,11 +175,8 @@ function PreviewContent() {
             if (match.imageUrl) storedImage = match.imageUrl
           }
         }
-      } catch {
-        /* ignore */
-      }
+      } catch { /* ignore */ }
     }
-
     setWordpressUrl(wp)
     if (storedImage) {
       setImageUrl(storedImage)
@@ -197,7 +187,7 @@ function PreviewContent() {
   }, [searchParams])
 
   const content = contentFromUrl || storageContent
-  const category = searchParams.get('category') || 'お役立ち情報'
+  const category = searchParams.get('category') || 'コラム'
   const date = searchParams.get('date') || new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'numeric', day: 'numeric' }).replace(/\//g, '.')
   const articleId = searchParams.get('articleId') || ''
 
@@ -217,34 +207,27 @@ function PreviewContent() {
   const handleStepClick = useCallback(
     (step: Step) => {
       const base = articleId ? `/editor?articleId=${articleId}&step=` : '/editor?step='
-      if (step === 1) {
-        router.push(`${base}1`)
-      } else if (step === 2) {
-        router.push(`${base}2`)
-      } else if (step === 3) {
-        router.push(`${base}3`)
-      } else if (step === 4) {
-        // 現在プレビュー画面のためそのまま（必要なら同一URLでリロードしない限り何もしない）
-      } else if (step === 5) {
-        handlePublish()
-      }
+      if (step === 1) router.push(`${base}1`)
+      else if (step === 2) router.push(`${base}2`)
+      else if (step === 3) router.push(`${base}3`)
+      else if (step === 5) handlePublish()
     },
     [articleId, router, handlePublish]
   )
 
   return (
-    <div style={{ minHeight: '100vh', background: '#fff' }}>
-      {/* ① 固定バナー（常に表示・投稿画面へ・戻る） */}
+    <div style={{ minHeight: '100vh', background: '#fff', fontFamily: "'Noto Sans JP', sans-serif" }}>
+      {/* ───── 固定プレビューバー ───── */}
       <div
         style={{
           position: 'fixed',
           top: 0,
           left: 220,
           right: 0,
-          zIndex: 1000,
+          zIndex: 1100,
           backgroundColor: '#1e3a5f',
           color: 'white',
-          padding: '12px 24px',
+          padding: '10px 24px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -254,660 +237,246 @@ function PreviewContent() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ fontSize: 20 }}>👁️</span>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 15 }}>プレビューモード</div>
-            <div style={{ fontSize: 12, opacity: 0.8 }}>
+            <div style={{ fontWeight: 700, fontSize: 14 }}>プレビューモード</div>
+            <div style={{ fontSize: 11, opacity: 0.8 }}>
               {isPublishedPreview
                 ? '投稿済み記事の表示確認（編集はできません）'
-                : '実際のサイトでの表示イメージを確認しています'}
+                : 'Smart Boarding コラムページでの表示イメージ'}
             </div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 12, flexShrink: 0, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 12, flexShrink: 0, alignItems: 'center' }}>
           {isPublishedPreview ? (
             <>
-              <button
-                type="button"
-                onClick={() => router.push('/published')}
-                style={{
-                  background: 'transparent',
-                  border: '1px solid rgba(255,255,255,0.5)',
-                  color: 'white',
-                  padding: '10px 20px',
-                  borderRadius: 6,
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  fontSize: 14,
-                }}
-              >
-                ← 一覧に戻る
-              </button>
+              <button type="button" onClick={() => router.push('/published')} style={previewBtnOutline}>← 一覧に戻る</button>
               {wordpressUrl && (
-                <a
-                  href={wordpressUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    backgroundColor: '#1a9a7b',
-                    border: 'none',
-                    color: 'white',
-                    padding: '10px 24px',
-                    borderRadius: 6,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    fontSize: 14,
-                    textDecoration: 'none',
-                    display: 'inline-block',
-                  }}
-                >
+                <a href={wordpressUrl} target="_blank" rel="noopener noreferrer" style={{ ...previewBtnSolid, backgroundColor: '#1a9a7b', textDecoration: 'none', display: 'inline-block' }}>
                   WordPressで開く
                 </a>
               )}
             </>
           ) : (
             <>
-              <button
-                type="button"
-                onClick={() => (articleId ? router.push(`/editor?articleId=${articleId}&step=3`) : router.push('/editor?step=3'))}
-                style={{
-                  background: 'transparent',
-                  border: '1px solid rgba(255,255,255,0.5)',
-                  color: 'white',
-                  padding: '10px 20px',
-                  borderRadius: 6,
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  fontSize: 14,
-                }}
-              >
-                ← 戻る
-              </button>
-              <button
-                type="button"
-                onClick={handlePublish}
-                style={{
-                  backgroundColor: '#e63946',
-                  border: 'none',
-                  color: 'white',
-                  padding: '10px 24px',
-                  borderRadius: 6,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  fontSize: 14,
-                }}
-              >
-                投稿画面へ
-              </button>
+              <button type="button" onClick={() => (articleId ? router.push(`/editor?articleId=${articleId}&step=3`) : router.push('/editor?step=3'))} style={previewBtnOutline}>← 戻る</button>
+              <button type="button" onClick={handlePublish} style={{ ...previewBtnSolid, backgroundColor: '#e63946' }}>投稿画面へ</button>
             </>
           )}
         </div>
       </div>
 
-      {/* バナー分のスペーサー + 2カラム（左：プレビュー本文 / 右：プロセス表示） */}
-      <div style={{ paddingTop: 56, display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+      {/* ───── メインコンテンツ（左: プレビュー / 右: ステップ表示） ───── */}
+      <div style={{ paddingTop: 52, display: 'flex', gap: 16, alignItems: 'flex-start' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-      {/* ② ヘッダー（クライアントサイト完全再現） */}
-      <header
-        style={{
-          backgroundColor: 'white',
-          borderBottom: '1px solid #e5e5e5',
-          padding: '0 24px',
-          minHeight: 64,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          position: 'sticky',
-          top: 56,
-          zIndex: 998,
-          flexWrap: 'nowrap',
-          gap: 16,
-        }}
-      >
-        {/* 左：ロゴ（Step3で public のSVGを差し替え。現状はプレースホルダー経由） */}
-        <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/api/nts-logo"
-            alt="Smart Boarding（スマートボーディング）"
-            style={{ height: 36, width: 'auto', display: 'block' }}
-          />
-        </div>
 
-        {/* 中央：ナビゲーション・改行なし */}
-        <nav
-          style={{
-            display: 'flex',
-            gap: 28,
-            fontSize: 13,
-            color: '#333',
-            fontWeight: 500,
-            flexShrink: 0,
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {[
-            'サービス・機能',
-            '導入事例',
-            '料金',
-            'お役立ち資料',
-            '無料トライアル',
-            'お問い合わせ',
-          ].map(item => (
-            <span key={item} style={{ cursor: 'pointer', color: '#222' }}>
-              {item}
-            </span>
-          ))}
-        </nav>
-
-        {/* 右：電話 + お問い合わせボタン・1行で表示 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexShrink: 0, whiteSpace: 'nowrap' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
-                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" stroke="#33B5E5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-              </svg>
-              <span style={{ fontSize: 14, fontWeight: 700, color: '#33B5E5' }}>03-5908-1400</span>
+          {/* ===== HEADER（Smart Boarding 公式準拠） ===== */}
+          <header style={{ borderBottom: '1px solid #e5e5e5', backgroundColor: '#fff', position: 'sticky', top: 52, zIndex: 1000 }}>
+            {/* 上部ログインバー */}
+            <div style={{ backgroundColor: '#0297CD', textAlign: 'right', padding: '4px 24px' }}>
+              <span style={{ color: '#fff', fontSize: 11 }}>ログイン（会員様向け）</span>
             </div>
-            <span style={{ fontSize: 11, color: '#666', marginTop: 2 }}>電話相談受付:10:00-20:00(年中無休)</span>
-          </div>
-          <button
-            type="button"
-            style={{
-              backgroundColor: '#33B5E5',
-              color: 'white',
-              padding: '10px 20px',
-              borderRadius: 6,
-              border: 'none',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            お問い合わせ
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M5 12h14M12 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
-      </header>
-
-      {/* ③ ファーストビュー（NEWSヒーロー） */}
-      <section style={{ backgroundColor: '#f5f4f0', padding: '60px 0' }}>
-        <div
-          style={{
-            maxWidth: 1200,
-            margin: '0 auto',
-            padding: '0 40px',
-            position: 'relative',
-          }}
-        >
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              fontSize: 80,
-              fontWeight: 900,
-              color: 'rgba(0,0,0,0.04)',
-              fontFamily: 'neue-haas-grotesk-display, Arial',
-              overflow: 'hidden',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            Hearts and future to the future Hearts
-          </div>
-          <h1 style={{ position: 'relative' }}>
-            <span
-              style={{
-                display: 'block',
-                fontSize: 56,
-                fontWeight: 900,
-                color: '#1a9a7b',
-                fontFamily:
-                  '"neue-haas-grotesk-display", "HelveticaNeue", Arial, sans-serif',
-                lineHeight: 1,
-              }}
-            >
-              NEWS
-            </span>
-            <span
-              style={{
-                display: 'block',
-                fontSize: 16,
-                color: '#444',
-                marginTop: 8,
-              }}
-            >
-              ニュース
-            </span>
-          </h1>
-          <nav
-            style={{ marginTop: 16, fontSize: 13, color: '#666' }}
-            aria-label="パンくず"
-          >
-            <span style={{ color: '#33B5E5', cursor: 'pointer' }}>TOP</span>
-            {' > '}
-            <span style={{ color: '#33B5E5', cursor: 'pointer' }}>ニュース</span>
-            {' > '}
-            <span>
-              {title.length > 40 ? `${title.slice(0, 40)}...` : title}
-            </span>
-          </nav>
-        </div>
-      </section>
-
-      {/* ④ 記事メインコンテンツ */}
-      <section style={{ padding: '0 0 80px' }}>
-        <div
-          style={{
-            maxWidth: 960,
-            margin: '48px auto',
-            padding: '0 24px',
-          }}
-        >
-          <header style={{ marginBottom: 32 }}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                marginBottom: 16,
-              }}
-            >
-              <time
-                style={{
-                  color: '#1a9a7b',
-                  fontWeight: 700,
-                  fontSize: 15,
-                }}
-              >
-                {date}
-              </time>
-              <span
-                style={{
-                  backgroundColor: '#1a9a7b',
-                  color: 'white',
-                  padding: '2px 12px',
-                  borderRadius: 3,
-                  fontSize: 13,
-                }}
-              >
-                {category}
-              </span>
-            </div>
-            <h1
-              style={{
-                fontSize: 28,
-                fontWeight: 900,
-                lineHeight: 1.6,
-                color: '#111',
-                marginBottom: 24,
-                fontFamily: '"Noto Sans JP", sans-serif',
-              }}
-            >
-              {title}
-            </h1>
-            <ul
-              style={{
-                display: 'flex',
-                gap: 8,
-                listStyle: 'none',
-                padding: 0,
-                margin: 0,
-              }}
-            >
-              {[
-                { label: 'X', bg: '#000' },
-                { label: 'f', bg: '#1877f2' },
-                { label: 'B!', bg: '#00a4de' },
-                { label: 'in', bg: '#0077b5' },
-                { label: 'LINE', bg: '#06c755' },
-              ].map(({ label, bg }) => (
-                <li key={label}>
-                  <div
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: '50%',
-                      backgroundColor: bg,
-                      color: 'white',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 13,
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {label}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </header>
-          <div
-            style={{
-              fontFamily: '"Noto Sans JP", sans-serif',
-              fontSize: 16,
-              lineHeight: 1.9,
-              color: '#333',
-            }}
-            dangerouslySetInnerHTML={{ __html: formattedContent }}
-          />
-        </div>
-      </section>
-
-      {/* ⑥ 最新記事グリッド（LATEST NEWS） */}
-      <section style={{ backgroundColor: '#f5f4f0', padding: '80px 0' }}>
-        <div
-          style={{
-            maxWidth: 1200,
-            margin: '0 auto',
-            padding: '0 40px',
-          }}
-        >
-          <h2 style={{ marginBottom: 24 }}>
-            <span
-              style={{
-                display: 'block',
-                fontSize: 40,
-                fontWeight: 900,
-                color: '#222',
-                fontFamily: '"neue-haas-grotesk-display", Arial',
-              }}
-            >
-              LATEST NEWS
-            </span>
-            <span style={{ fontSize: 14, color: '#666' }}>最新ニュース</span>
-          </h2>
-          {/* CATEGORY・TAG（見た目のみ） */}
-          <div style={{ marginBottom: 40 }}>
-            <div style={{ marginBottom: 16 }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#222', display: 'block', marginBottom: 8 }}>CATEGORY</span>
-              <span style={{ fontSize: 14, color: '#333' }}>
-                すべて　インターン　導入事例　お役立ち情報　お知らせ
-              </span>
-            </div>
-            <div>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#222', display: 'block' }}>TAG</span>
-            </div>
-          </div>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: 32,
-            }}
-          >
-            <div
-              style={{
-                backgroundColor: 'white',
-                borderRadius: 4,
-                overflow: 'hidden',
-                border: '2px solid #1a9a7b',
-              }}
-            >
-              <div
-                style={{
-                  backgroundColor: '#1a9a7b',
-                  color: 'white',
-                  textAlign: 'center',
-                  padding: '6px',
-                  fontSize: 12,
-                  fontWeight: 700,
-                }}
-              >
-                📍 この記事が表示されます
-              </div>
-              {imageUrl ? (
+            {/* メインナビ */}
+            <div style={{ maxWidth: 1220, margin: '0 auto', padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 70 }}>
+              {/* ロゴ */}
+              <div style={{ flexShrink: 0 }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={imageUrl}
-                  alt=""
-                  style={{
-                    width: '100%',
-                    aspectRatio: '16/9',
-                    objectFit: 'cover',
-                  }}
+                  src="https://www.smartboarding.net/_pack/img/cmn_logo_01.png"
+                  alt="Smart Boarding（スマートボーディング）"
+                  style={{ height: 32, width: 'auto' }}
                 />
-              ) : (
-                <div
-                  style={{
-                    width: '100%',
-                    aspectRatio: '16/9',
-                    backgroundColor: '#ddd',
-                  }}
-                />
-              )}
-              <div style={{ padding: 16 }}>
-                <div
-                  style={{
-                    color: '#1a9a7b',
-                    fontSize: 13,
-                    marginBottom: 8,
-                  }}
-                >
-                  {date} {category}
-                </div>
-                <p
-                  style={{
-                    fontWeight: 700,
-                    fontSize: 15,
-                    lineHeight: 1.5,
-                    color: '#111',
-                  }}
-                >
-                  {title.length > 50 ? `${title.slice(0, 50)}...` : title}
-                </p>
+              </div>
+              {/* ナビリンク */}
+              <nav style={{ display: 'flex', gap: 20, fontSize: 13, fontWeight: 500, color: '#333', whiteSpace: 'nowrap' }}>
+                {NAV_ITEMS.map(n => (
+                  <span key={n.label} style={{ cursor: 'default' }}>{n.label}</span>
+                ))}
+              </nav>
+              {/* CTAボタン */}
+              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                <span style={headerCTABtn('#fff', '#0297CD', '1px solid #0297CD')}>無料トライアル</span>
+                <span style={headerCTABtn('#0297CD', '#fff', 'none')}>資料ダウンロード</span>
               </div>
             </div>
-            {DUMMY_ARTICLES.map((article, i) => (
-              <div
-                key={i}
-                style={{
-                  backgroundColor: 'white',
-                  borderRadius: 4,
-                  overflow: 'hidden',
-                  opacity: 0.6,
-                }}
-              >
-                {/* プレースホルダー：白地＋ロゴ（Step3で差し替え） */}
-                <div
-                  style={{
-                    width: '100%',
-                    aspectRatio: '16/9',
-                    backgroundColor: 'white',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: 24,
-                    borderBottom: '1px solid #f0f0f0',
-                  }}
-                >
-                  <img
-                    src="/api/nts-logo"
-                    alt="Smart Boarding"
-                    style={{ height: 28, width: 'auto', display: 'block', marginBottom: 6 }}
-                  />
-                  <span
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 600,
-                      color: '#33B5E5',
-                      letterSpacing: '0.08em',
-                    }}
-                  >
-                    SMART BOARDING
+          </header>
+
+          {/* ===== パンくず ===== */}
+          <div style={{ maxWidth: 1220, margin: '0 auto', padding: '12px 20px', fontSize: 12, color: '#666' }}>
+            <span style={{ color: '#0297CD', cursor: 'pointer' }}>TOP</span>
+            {' > '}
+            <span style={{ color: '#0297CD', cursor: 'pointer' }}>コラム</span>
+            {' > '}
+            <span>{title.length > 50 ? `${title.slice(0, 50)}...` : title}</span>
+          </div>
+
+          {/* ===== 2カラム: 記事本文 + サイドバー ===== */}
+          <div style={{ maxWidth: 1220, margin: '0 auto', padding: '0 20px 80px', display: 'flex', gap: 40, alignItems: 'flex-start' }}>
+            {/* メインカラム */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {/* 記事ヘッド */}
+              <div style={{ marginBottom: 24 }}>
+                {/* 日付 */}
+                <div style={{ display: 'flex', gap: 16, fontSize: 13, color: '#666', marginBottom: 8 }}>
+                  <span>📅 {date}</span>
+                </div>
+                {/* カテゴリ */}
+                <div style={{ marginBottom: 12 }}>
+                  <span style={{ display: 'inline-block', backgroundColor: '#f0f0f0', padding: '3px 12px', borderRadius: 2, fontSize: 12, color: '#555' }}>
+                    {category}
                   </span>
                 </div>
-                <div style={{ padding: 16 }}>
-                  <div
-                    style={{
-                      color: '#1a9a7b',
-                      fontSize: 13,
-                      marginBottom: 8,
-                    }}
-                  >
-                    {article.date} {article.category}
+                {/* タイトル */}
+                <h1 style={{ fontSize: 26, fontWeight: 700, lineHeight: 1.6, color: '#222', margin: '0 0 20px' }}>
+                  {title}
+                </h1>
+                {/* アイキャッチ */}
+                {imageUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={imageUrl} alt="" style={{ width: '100%', height: 'auto', borderRadius: 4, marginBottom: 24 }} />
+                )}
+              </div>
+
+              {/* 記事本文 */}
+              <article
+                style={{ fontSize: 16, lineHeight: 2, color: '#333' }}
+                dangerouslySetInnerHTML={{ __html: formattedContent }}
+              />
+
+              {/* ───── 著者ブロック ───── */}
+              <div style={{ marginTop: 48, borderTop: '1px solid #e5e5e5', paddingTop: 32 }}>
+                <p style={{ fontSize: 13, fontWeight: 700, color: '#666', marginBottom: 16 }}>この記事を書いたコンサルタント</p>
+                <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', padding: 16, background: '#f9f9f9', borderRadius: 8 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="https://www.smartboarding.net/_cms_/wp-content/uploads/FCE_main_yokoRGB.png"
+                    alt="株式会社FCE"
+                    style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+                  />
+                  <div>
+                    <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 2 }}>株式会社FCE</p>
+                    <p style={{ fontSize: 12, color: '#888', marginBottom: 8 }}>（編集部）</p>
+                    <p style={{ fontSize: 13, lineHeight: 1.7, color: '#555' }}>
+                      株式会社FCE 人材育成コラム編集部です。人材開発/研修を検討中の方、組織力の向上を目指し情報収集をしている方向けに有益なコンテンツを発信していけるようサイト運営をしております。
+                    </p>
                   </div>
-                  <p
-                    style={{
-                      fontWeight: 700,
-                      fontSize: 15,
-                      lineHeight: 1.5,
-                      color: '#111',
-                    }}
-                  >
-                    {article.title}
-                  </p>
                 </div>
               </div>
-            ))}
-          </div>
-          <div style={{ textAlign: 'right', marginTop: 24 }}>
-            <span
-              style={{
-                color: '#33B5E5',
-                fontWeight: 700,
-                cursor: 'pointer',
-              }}
-            >
-              VIEW ALL →
-            </span>
-          </div>
-        </div>
-      </section>
-
-      {/* ⑦ CONTACTセクション */}
-      <aside
-        style={{
-          backgroundColor: '#33B5E5',
-          color: 'white',
-          padding: '80px 0',
-          textAlign: 'center',
-        }}
-      >
-        <h2 style={{ marginBottom: 24 }}>
-          <span
-            style={{
-              display: 'block',
-              fontSize: 40,
-              fontWeight: 900,
-              fontFamily: 'Arial',
-            }}
-          >
-            CONTACT
-          </span>
-          <span style={{ fontSize: 14, opacity: 0.8 }}>お問い合わせ</span>
-        </h2>
-        <hr
-          style={{
-            border: 'none',
-            borderTop: '1px solid rgba(255,255,255,0.2)',
-            margin: '24px auto',
-            width: 480,
-          }}
-        />
-        <p
-          style={{
-            fontSize: 22,
-            fontWeight: 700,
-            lineHeight: 1.8,
-            marginBottom: 32,
-          }}
-        >
-          人財育成と研修について、
-          <br />
-          まずはお気軽にご相談ください。
-        </p>
-        <div style={{ marginBottom: 32 }}>
-          <div
-            style={{ fontSize: 13, opacity: 0.8, marginBottom: 8 }}
-          >
-            電話相談受付 : 10:00-20:00 (年中無休)
-          </div>
-        </div>
-        <button
-          type="button"
-          style={{
-            border: '2px solid white',
-            backgroundColor: 'transparent',
-            color: 'white',
-            padding: '14px 40px',
-            borderRadius: 28,
-            fontSize: 16,
-            cursor: 'pointer',
-            fontWeight: 700,
-          }}
-        >
-          相談・お問い合わせ →
-        </button>
-      </aside>
-
-      {/* ⑧ フッター */}
-      <footer
-        style={{
-          backgroundColor: '#0a1f4a',
-          color: 'white',
-          padding: '60px 40px 24px',
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 1200,
-            margin: '0 auto',
-            display: 'flex',
-            justifyContent: 'space-between',
-            marginBottom: 40,
-          }}
-        >
-          <div>
-            <div
-              style={{ fontWeight: 900, fontSize: 20, marginBottom: 16 }}
-            >
-              株式会社FCE
             </div>
-            <p style={{ fontSize: 13, opacity: 0.6, lineHeight: 1.8 }}>
-              〒163-0810
-              <br />
-              東京都新宿区西新宿2-4-1 新宿NSビル10F
-              <br />
-              TEL: 03-5908-1400（代表）
-            </p>
+
+            {/* ───── サイドバー ───── */}
+            <aside style={{ width: 280, flexShrink: 0, position: 'sticky', top: 140 }}>
+              {SIDE_BANNERS.map((b, i) => (
+                <div key={i} style={{ marginBottom: 16 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={b.img} alt="" style={{ width: '100%', height: 'auto', borderRadius: 4, cursor: 'pointer' }} />
+                </div>
+              ))}
+            </aside>
           </div>
-          <nav
-            style={{
-              display: 'flex',
-              gap: 48,
-              fontSize: 13,
-              opacity: 0.8,
-            }}
-          >
-            {/* About / Service / Case Study / Column / News / Recruit */}
-          </nav>
+
+          {/* ===== 14日間無料トライアル CTA ===== */}
+          <section style={{ backgroundColor: '#e8f8ff', padding: '60px 0', textAlign: 'center' }}>
+            <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, marginBottom: 24, flexWrap: 'wrap' }}>
+                <div style={{
+                  width: 100, height: 100, borderRadius: '50%', backgroundColor: '#0297CD', color: '#fff',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  fontWeight: 900, lineHeight: 1.2,
+                }}>
+                  <span style={{ fontSize: 28 }}>14</span>
+                  <span style={{ fontSize: 11 }}>日間</span>
+                  <span style={{ fontSize: 10 }}>全機能</span>
+                </div>
+                <span style={{ fontSize: 28, fontWeight: 700, color: '#222' }}>無料トライアル実施中</span>
+              </div>
+              <p style={{ fontSize: 14, lineHeight: 1.8, color: '#444', marginBottom: 24 }}>
+                せっかく申し込んだトライアル。結局使わなかった、なんてことありませんか。<br />
+                Smart Boardingは無料期間から<strong style={{ color: '#0297CD' }}>「貴社オリジナルコース」</strong>にカスタマイズしてご提供。
+              </p>
+              <div style={{ marginBottom: 24, fontSize: 15, color: '#333' }}>
+                <span style={{ display: 'inline-block', border: '1px solid #ccc', padding: '6px 20px', borderRadius: 4, marginRight: 8 }}>階層</span>
+                <span style={{ marginRight: 8 }}>×</span>
+                <span style={{ display: 'inline-block', border: '1px solid #ccc', padding: '6px 20px', borderRadius: 4, marginRight: 8 }}>課題</span>
+                <span style={{ marginRight: 8 }}>=</span>
+                <span style={{ display: 'inline-block', border: '2px solid #0297CD', padding: '6px 20px', borderRadius: 4, color: '#0297CD', fontWeight: 700 }}>貴社オリジナルコース</span>
+              </div>
+              <div>
+                <span style={{
+                  display: 'inline-block', backgroundColor: '#0297CD', color: '#fff', padding: '14px 48px',
+                  borderRadius: 6, fontWeight: 700, fontSize: 16, cursor: 'pointer',
+                }}>
+                  ＼3分で登録完了／<br />無料トライアルに申し込む →
+                </span>
+              </div>
+            </div>
+          </section>
+
+          {/* ===== CONTACT セクション ===== */}
+          <section style={{ backgroundColor: '#1a1a2e', color: '#fff', padding: '60px 0', textAlign: 'center' }}>
+            <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 20px' }}>
+              <p style={{ fontSize: 12, letterSpacing: 4, marginBottom: 4, opacity: 0.6 }}>CONTACT</p>
+              <p style={{ fontSize: 18, fontWeight: 500, marginBottom: 32 }}>お問い合わせ</p>
+              <div style={{ display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <ContactCard
+                  title="14日間無料トライアル"
+                  desc="課題/展望をお伺いした上で【貴社専用のコース】を作成し、無料トライアルを14日間行って頂けます。"
+                  btnLabel="詳しくはこちら"
+                />
+                <DownloadCard />
+              </div>
+              <div style={{ marginTop: 40, display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <span style={contactBottomBtn}>資料請求</span>
+                <span style={contactBottomBtn}>お問い合わせ・ご相談</span>
+              </div>
+            </div>
+          </section>
+
+          {/* ===== フッター ===== */}
+          <footer style={{ backgroundColor: '#111', color: '#fff', padding: '48px 20px 24px' }}>
+            <div style={{ maxWidth: 1220, margin: '0 auto' }}>
+              <div style={{ display: 'flex', gap: 48, alignItems: 'flex-start', flexWrap: 'wrap', marginBottom: 40 }}>
+                {/* ロゴ + 説明 */}
+                <div style={{ maxWidth: 360, flexShrink: 0 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="https://www.smartboarding.net/_pack/img/cmn_logo_01.png"
+                    alt="Smart Boarding（スマートボーディング）"
+                    style={{ height: 28, width: 'auto', filter: 'brightness(10)', marginBottom: 12 }}
+                  />
+                  <p style={{ fontSize: 11, lineHeight: 1.8, opacity: 0.6 }}>
+                    「知っている」から「できている」へ導くオンライントレーニングシステム。インプットだけではなく、４つの手法のオンライントレーニングでアウトプットを繰り返すことでビジネス現場で「成果を出す」レベルまでトレーニングが可能。
+                  </p>
+                  <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+                    <span style={footerCTASmall}>無料トライアルはこちら</span>
+                    <span style={footerCTASmall}>今すぐ資料をダウンロード</span>
+                  </div>
+                </div>
+                {/* ナビ */}
+                <nav style={{ display: 'flex', gap: 32, flexWrap: 'wrap', fontSize: 12, opacity: 0.7 }}>
+                  {FOOTER_NAV.map(g => (
+                    <div key={g.section}>
+                      <p style={{ fontWeight: 700, marginBottom: 8 }}>{g.section}</p>
+                      {g.items.map(item => (
+                        <p key={item} style={{ marginBottom: 4, opacity: 0.8 }}>{item}</p>
+                      ))}
+                    </div>
+                  ))}
+                </nav>
+              </div>
+              <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.15)', marginBottom: 16 }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, opacity: 0.5, flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 16 }}>
+                  <span>会社概要</span>
+                  <span>事業概要</span>
+                  <span>プライバシーポリシー</span>
+                  <span>特定商取引に関する法律に基づく表記</span>
+                </div>
+                <span>©FCE . ALL RIGHTS RESERVED.</span>
+              </div>
+            </div>
+          </footer>
         </div>
-        <hr
-          style={{
-            border: 'none',
-            borderTop: '1px solid rgba(255,255,255,0.1)',
-            marginBottom: 24,
-          }}
-        />
-        <p
-          style={{
-            textAlign: 'right',
-            fontSize: 12,
-            opacity: 0.5,
-          }}
-        >
-          Copyright © 株式会社FCE. All rights reserved.
-        </p>
-      </footer>
-        </div>
+
+        {/* ステップインジケータ */}
         {!isPublishedPreview && (
           <div style={{ flexShrink: 0, width: 140, position: 'sticky', top: 72, paddingTop: 8 }}>
             <StepIndicator currentStep={4} onStepClick={handleStepClick} />
@@ -917,6 +486,94 @@ function PreviewContent() {
     </div>
   )
 }
+
+/* ───── サブコンポーネント ───── */
+
+function ContactCard({ title, desc, btnLabel }: { title: string; desc: string; btnLabel: string }) {
+  return (
+    <div style={{ background: '#fff', borderRadius: 8, padding: 24, maxWidth: 360, textAlign: 'left', color: '#333' }}>
+      <p style={{ fontWeight: 700, fontSize: 16, marginBottom: 8 }}>{title}</p>
+      <p style={{ fontSize: 12, lineHeight: 1.7, marginBottom: 16, color: '#666' }}>{desc}</p>
+      <span style={{ display: 'inline-block', border: '1px solid #0297CD', color: '#0297CD', padding: '8px 24px', borderRadius: 4, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+        {btnLabel} →
+      </span>
+    </div>
+  )
+}
+
+function DownloadCard() {
+  return (
+    <div style={{ background: '#fff', borderRadius: 8, padding: 24, maxWidth: 360, textAlign: 'left', color: '#333' }}>
+      <p style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>人材開発お役立ち資料</p>
+      <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>年間 <span style={{ fontSize: 28, fontWeight: 900 }}>6,000</span> 名の企業研修を受け持つ</p>
+      <p style={{ fontSize: 14, marginBottom: 8 }}>講師自らが発見をまとめた</p>
+      <p style={{ fontWeight: 700, color: '#0297CD', marginBottom: 16, fontSize: 14 }}>人材開発ノウハウ公開中！</p>
+      <span style={{ display: 'inline-block', backgroundColor: '#0297CD', color: '#fff', padding: '10px 24px', borderRadius: 4, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+        資料をダウンロードする 📄
+      </span>
+    </div>
+  )
+}
+
+/* ───── Shared inline styles ───── */
+
+const previewBtnOutline: React.CSSProperties = {
+  background: 'transparent',
+  border: '1px solid rgba(255,255,255,0.5)',
+  color: 'white',
+  padding: '8px 18px',
+  borderRadius: 6,
+  cursor: 'pointer',
+  fontWeight: 600,
+  fontSize: 13,
+}
+
+const previewBtnSolid: React.CSSProperties = {
+  border: 'none',
+  color: 'white',
+  padding: '8px 22px',
+  borderRadius: 6,
+  fontWeight: 700,
+  cursor: 'pointer',
+  fontSize: 13,
+}
+
+function headerCTABtn(bg: string, color: string, border: string): React.CSSProperties {
+  return {
+    display: 'inline-block',
+    backgroundColor: bg,
+    color,
+    border,
+    padding: '8px 16px',
+    borderRadius: 4,
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+  }
+}
+
+const contactBottomBtn: React.CSSProperties = {
+  display: 'inline-block',
+  border: '1px solid rgba(255,255,255,0.4)',
+  color: '#fff',
+  padding: '12px 32px',
+  borderRadius: 4,
+  fontSize: 13,
+  fontWeight: 600,
+  cursor: 'pointer',
+}
+
+const footerCTASmall: React.CSSProperties = {
+  display: 'inline-block',
+  border: '1px solid rgba(255,255,255,0.3)',
+  padding: '6px 12px',
+  borderRadius: 4,
+  fontSize: 10,
+  cursor: 'pointer',
+}
+
+/* ───── Page export ───── */
 
 export default function PreviewPage() {
   return (
