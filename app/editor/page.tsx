@@ -405,10 +405,43 @@ function EditorContent() {
       const wpStatus: 'draft' | 'publish' | 'future' =
         choice.type === 'future' ? 'future' : choice.type
 
+      // ── Step 1: 画像アップロード（専用エンドポイントで先に処理）
+      let preUploadedMediaId: number | undefined
+      let preUploadedImageUrl: string | undefined
+      const imageDataUrl = article.imageUrl
+      if (imageDataUrl?.startsWith('data:')) {
+        const matches = imageDataUrl.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/)
+        if (matches) {
+          const [, imgMimeType, imgBase64] = matches
+          try {
+            const uploadRes = await fetch('/api/wordpress/upload-media', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                imageBase64: imgBase64,
+                mimeType: imgMimeType,
+                articleTitle: publishTitle,
+              }),
+            })
+            const uploadData = await uploadRes.json()
+            if (uploadRes.ok) {
+              preUploadedMediaId = uploadData.mediaId
+              preUploadedImageUrl = uploadData.sourceUrl
+            } else {
+              setToastMessage(`⚠️ アイキャッチ画像のアップロードに失敗しました（投稿は続行します）\n${uploadData.error ?? ''}`)
+            }
+          } catch (uploadErr) {
+            setToastMessage(`⚠️ 画像アップロードでエラーが発生しました（投稿は続行します）`)
+          }
+        }
+      }
+
+      // ── Step 2: 記事投稿（画像はURLのみ渡す）
       const body: Record<string, unknown> = {
         title: publishTitle,
         content: contentWithLinks,
-        imageUrl: article.imageUrl,
+        imageUrl: preUploadedImageUrl ?? (imageDataUrl?.startsWith('data:') ? undefined : imageDataUrl),
+        preUploadedMediaId,
         targetKeyword: article.targetKeyword?.trim() || undefined,
         slug: slug.trim() || undefined,
         status: wpStatus,
@@ -486,6 +519,9 @@ function EditorContent() {
         })
       }
       setWordpressStatus('success')
+      if (data.imageUploadWarning) {
+        setToastMessage(`⚠️ 投稿は成功しましたが、アイキャッチ画像のアップロードに失敗しました。\n${data.imageUploadWarning}`)
+      }
     } catch (e) {
       setWordpressStatus('error')
       setWordpressError(e instanceof Error ? e.message : 'WordPress投稿に失敗しました')

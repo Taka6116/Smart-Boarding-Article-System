@@ -16,6 +16,8 @@ export interface WordPressPostResult {
   link: string;             // 投稿のURL
   editLink: string;         // 管理画面の編集URL
   status: 'draft' | 'publish' | 'future';
+  /** 画像アップロードに失敗した場合の警告メッセージ（投稿自体は成功） */
+  imageUploadWarning?: string;
 }
 
 import { resolveCanonicalPostSlug } from './slugNormalize'
@@ -698,20 +700,14 @@ export function buildPostContent(
   // 2-1. FAQアコーディオンHTML
   const faqAccordionHtml = buildFaqAccordionHtml(faqs);
 
-  // 3. Schema生成（投稿には必ず含める）
-  const articleSchema = buildArticleSchema(payload, slug, { bodyTopImageUrl: options?.bodyTopImageUrl, scheduledDate: options?.scheduledDate });
-  const faqSchema = buildFaqSchema(faqs);
-  if (process.env.NODE_ENV === 'development' && faqs.length > 0) {
-    console.log(`[FAQ] Schema generated: ${faqSchema ? 'yes' : 'no'}`);
-  }
-
-  // 4. 結合（本文 → FAQアコーディオン → Article Schema → FAQ Schema）
+  // 3. 結合（本文 → FAQアコーディオン）
+  // ※ JSON-LDスキーマはWordPressのwp_kses_post()によって<script>タグが除去され
+  //    JSONテキストが本文に露出するため、post contentには含めない。
+  //    スキーマはWordPress側のSEOプラグイン（Yoast等）が管理する。
   const parts = [
     `<!-- Smart Boarding Article System -->`,
     fullBody,
     faqAccordionHtml,
-    articleSchema,
-    faqSchema,
   ].filter(Boolean);
 
   return parts.join('\n\n').replace(/<p[^>]*>\s*<\/p>/g, '');
@@ -785,7 +781,7 @@ async function resolveWordPressTagIds(
 export async function postToWordPress(
   payload: WordPressPostPayload,
   status: 'draft' | 'publish' | 'future' = 'draft',
-  options?: { scheduledDate?: string; categoryIds?: number[] }
+  options?: { scheduledDate?: string; categoryIds?: number[]; preUploadedMediaId?: number; preUploadedImageUrl?: string }
 ): Promise<WordPressPostResult> {
   const wpUrl = process.env.WORDPRESS_URL?.trim();
   const username = process.env.WORDPRESS_USERNAME?.trim();
@@ -808,11 +804,19 @@ export async function postToWordPress(
   // Basic認証のトークンを生成
   const credentials = Buffer.from(`${username}:${appPassword}`).toString('base64');
 
-  // アイキャッチ画像を先にアップロード（本文最上部の画像URL取得のため）
+  // アイキャッチ画像のアップロード
+  // クライアントが事前アップロード済みの場合はそれを優先使用（2ステップフロー）
   let mediaId: number | undefined;
   let bodyTopImageUrl: string | undefined;
+  let imageUploadWarning: string | undefined;
 
-  if (payload.imageBase64) {
+  if (options?.preUploadedMediaId) {
+    // 事前アップロード済み: mediaIdとURLをそのまま使用
+    mediaId = options.preUploadedMediaId;
+    bodyTopImageUrl = options.preUploadedImageUrl;
+    console.log('[WordPress] 事前アップロード済み画像を使用: mediaId=', mediaId);
+  } else if (payload.imageBase64) {
+    // フォールバック: インラインアップロード（直接base64が渡された場合）
     try {
       const mediaResult = await uploadBase64ImageToWordPress(
         payload.imageBase64,
@@ -822,8 +826,11 @@ export async function postToWordPress(
       );
       mediaId = mediaResult.id;
       bodyTopImageUrl = mediaResult.sourceUrl;
+      console.log('[WordPress] 画像アップロード成功:', bodyTopImageUrl);
     } catch (err) {
-      console.error('アイキャッチ画像のアップロードに失敗しました（投稿は続行）:', err);
+      const errMsg = err instanceof Error ? err.message : String(err);
+      imageUploadWarning = `アイキャッチ画像のアップロードに失敗しました: ${errMsg}`;
+      console.error('[WordPress] ' + imageUploadWarning);
     }
   }
 
@@ -884,6 +891,7 @@ export async function postToWordPress(
       link: data.link,
       editLink: `${wpUrl}/wp-admin/post.php?post=${data.id}&action=edit`,
       status: data.status,
+      ...(imageUploadWarning ? { imageUploadWarning } : {}),
     };
   } catch (err) {
     if (err instanceof Error && err.message.startsWith('WordPress API error:')) {
