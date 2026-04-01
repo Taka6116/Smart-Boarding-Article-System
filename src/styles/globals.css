@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* クライアントHPブランドカラー */
+  --color-client: #002C93;
+  --color-client-hover: #0039b3;
+  --color-client-border: #0039b3;
+  --color-navy: #1B2A4A;
+  --color-red: #C0392B;
+  --color-light-navy: #2C3E6B;
+  --color-page-bg: #F5F7FA;
+  --color-card-bg: #FFFFFF;
+  --color-text-main: #1A1A2E;
+  --color-text-muted: #64748B;
+  --color-border: #E2E8F0;
+  --color-success: #16A34A;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--color-page-bg);
+  color: var(--color-text-main);
+  font-family: 'Noto Sans JP', sans-serif;
+  font-weight: 400;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-weight: 700;
+}
+
+.font-mono {
+  font-family: 'DM Mono', monospace;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.85); }
+}
