@@ -568,28 +568,35 @@ export async function generateImagePromptFromArticle(
 
 Given the TITLE and CONTENT (Japanese) below, output exactly ONE English sentence for a photorealistic 16:9 horizontal stock photo.
 
+CRITICAL CONSTRAINT — NO PEOPLE:
+- NEVER include people, humans, person, figures, silhouettes, body parts (hands, arms, legs, face)
+- Focus ONLY on: empty workspaces, abstract concepts, objects (laptop, desk, book, coffee, plant), gradients, architecture, nature
+
 STEP 1 — Pick EXACTLY ONE archetype at random (use genuine randomness; do not default to the first). Match the article mood when obvious, but still vary across requests.
 
-ARCHETYPES:
-1) Overhead flat-lay: white desk, training outline papers, laptop with abstract learning-dashboard graphics (no legible text), pen, coffee cup, no people.
+ARCHETYPES (ALL WITHOUT PEOPLE):
+1) Overhead flat-lay: white desk, training materials, laptop with abstract learning-dashboard graphics (no legible text), pen, coffee cup, no people.
 2) Overhead: HR analytics printouts with abstract bar charts, pen, clean white table, no people, no readable numbers.
 3) White desk workspace: open laptop with abstract LMS or course-progress UI, notebook, shallow depth of field, no people.
-4) Bright training room: presenter pointing at screen with abstract slides, audience backs of heads softly blurred, professional daylight.
-5) Two professionals at desk with tablet showing abstract skill matrix, hands in focus, faces soft blur, modern office.
-6) Side angle: small group workshop with sticky notes on glass board, no readable text on notes, collaboration mood.
-7) Low-angle modern office atrium with glass and greenery, aspirational workplace, no street crowd.
-8) One person with headset at home office, laptop with abstract video-lesson screen, warm balanced light, casual business attire.
-9) Mentor coaching scene at desk, documents and clock metaphor for learning time, faces not dominant.
-10) Diverse team silhouettes in seminar seating, laptops open, abstract projection on screen, wide shot.
-11) Skill growth metaphor: staircase or upward path in bright corporate lobby, minimal abstract, no text.
-12) Default corporate: clean Japanese office desk with documents and laptop, abstract screen graphics, navy white grey palette, no people.
+4) Bright empty training room: chairs and desks with laptops, abstract projection on screen, no people.
+5) Modern desk near window: tablet showing abstract skill matrix, small plant, bright natural light, no people.
+6) Glass whiteboard with colorful sticky notes, abstract writing, collaboration metaphor, no people, no readable text.
+7) Low-angle modern office atrium with glass and greenery, ascending pathway, aspirational workplace, no people.
+8) Empty home office desk with laptop showing abstract video-lesson screen, warm balanced light, cozy atmosphere, no people.
+9) Wooden desk with clock, open planner and pen, learning time metaphor, soft bokeh background, no people.
+10) Empty seminar room: laptops on desks, abstract projection on screen, bright daylight through windows, no people.
+11) Skill growth metaphor: staircase or upward path in bright corporate lobby, minimal abstract, natural light, no people.
+12) Pastel gradient background (pink to white or mint to cream): clean minimalist, abstract geometric shapes, bright airy, no people.
+13) Empty straight road toward horizon under bright sky, journey concept, shallow focus, optimistic mood, no people.
+14) Vintage compass or pocket watch on wooden surface, soft bokeh, direction or time concept, close-up, no people.
+15) Open book with pen on wooden table near window, natural light, learning and knowledge concept, soft focus, no people.
 
 GLOBAL RULES (mandatory):
+- ABSOLUTELY NO people, human figures, silhouettes, or body parts (hands/arms/legs/face)
 - Never ask for letters, numbers, logos, watermarks, subtitles, or readable text. Charts and screens must be abstract / illegible only.
-- People allowed ONLY in archetypes 4–6 and 8–10. Then: no selfie, no glamor portrait; hands and materials in focus; faces partial or softly blurred.
-- Photorealistic, professional lighting, navy/grey/white friendly palette unless noted otherwise.
+- Photorealistic, professional soft natural lighting, pastel or warm earth tones.
 
-OUTPUT: One English sentence only, max 45 words, no quotation marks, no explanation.
+OUTPUT: One English sentence only, max 50 words, no quotation marks, no explanation.
 
 TITLE:
 ${title.trim()}
@@ -597,7 +604,7 @@ ${title.trim()}
 CONTENT (excerpt):
 ${contentSnippet}
 
-Your single English sentence:`
+Your single English sentence WITHOUT ANY PEOPLE:`
 
   const raw = await generateContentWithFallback(apiKey, prompt)
   const sentence = raw.trim().replace(/^["']|["']$/g, '').trim()

@@ -34,18 +34,21 @@ export async function generateImageWithFirefly(
   const requestBody = {
     prompt,
     negative_prompt: [
-      'direct camera-facing portrait, headshot, close-up face, selfie, beauty glamor model shot',
-      'revealing clothing, cleavage, exposed skin',
+      'person, people, human, man, woman, child, figure, silhouette, body',
+      'face, head, eyes, nose, mouth, portrait, headshot, selfie',
+      'hands, arms, legs, feet, fingers, skin, hair',
+      'business person, professional, worker, employee, team member',
+      'direct camera-facing portrait, beauty glamor model shot',
+      'revealing clothing, cleavage, exposed skin, inappropriate',
       'western faces, caucasian, blonde',
       'formal dark suit, stiff corporate conference room, boardroom',
       'text, typography, watermark, logo, subtitle, caption',
-      'readable text, legible numbers, gibberish letters, random letters, floating letters',
+      'readable text, legible numbers, gibberish letters, random letters',
       'cartoon, anime, illustration, painting, 3D render',
       'low quality, blurry, distorted, deformed, oversaturated',
       'dark moody atmosphere, dramatic shadows, noir lighting',
       'bright neon colors, harsh fluorescent lighting',
-      'nsfw, inappropriate',
-      'extra fingers, missing fingers, fused fingers, deformed hands, mutated hands',
+      'nsfw, adult content',
     ].join(', '),
     mode: 'text-to-image',
     aspect_ratio: '16:9',
@@ -99,86 +102,43 @@ export async function generateImageWithFirefly(
 /**
  * 記事タイトル・本文から英語の画像プロンプトを生成する
  * SD 3.5は英語プロンプトの方が品質が高い
- * Smart Boarding コラム記事のサムネイル品質・トンマナに準拠
+ * コンテンツフィルター回避のため人物要素完全除外
  */
 export function buildPrompt(title: string, content: string): string {
-  const text = title + content.slice(0, 200)
-
   const PASTEL_BG = [
-    'soft pastel gradient background from pale pink to white, clean minimalist composition with large empty center space, subtle silhouettes of 3-4 business people in lower third, bright airy mood, lifestyle stock photography, 16:9',
-    'gentle gradient background from mint green to cream white, abstract soft bokeh circles, minimalist corporate lifestyle aesthetic, warm inviting mood, professional stock photo, 16:9',
-    'sky blue to lavender soft gradient background, clean modern minimalist composition, bright and optimistic, professional lifestyle photography, 16:9',
-    'warm peach to cream gradient background with soft light flares, minimalist clean layout, bright hopeful mood, lifestyle stock aesthetic, 16:9',
+    'soft pastel gradient background from pale pink to white, clean minimalist composition, abstract geometric shapes, bright airy mood, lifestyle stock photography, 16:9',
+    'gentle gradient from mint green to cream white, abstract soft bokeh circles, minimalist corporate aesthetic, warm inviting, professional stock photo, 16:9',
+    'sky blue to lavender gradient, clean modern minimalist, bright optimistic, professional lifestyle photography, 16:9',
+    'warm peach to cream gradient with soft light flares, minimalist clean, bright hopeful, lifestyle aesthetic, 16:9',
   ]
-  const SILHOUETTE = [
-    'back view of person with arms raised wide toward bright sky at golden hour, silhouette against warm sunset, freedom and personal growth concept, warm orange and pink tones, lifestyle stock photography',
-    'rear view of young professional walking confidently on open road toward horizon, early morning light, aspirational journey concept, photorealistic lifestyle shot',
-    'side profile silhouette of person looking up at expansive bright sky, contemplative and hopeful mood, soft creamy bokeh background, golden hour natural light',
-    'person jumping with joy photographed from behind, outdoor park setting, bright sunny daylight, blurred green background, lifestyle stock photo',
-    'back view of person standing on hilltop overlooking vast landscape, dawn light, sense of possibility, warm tones',
+  const WORKSPACE = [
+    'overhead view of clean wooden desk with laptop, notebook and coffee cup, soft natural window light, minimalist workspace, no people, lifestyle photography',
+    'bright cafe table with open laptop and documents, morning light through window, cozy atmosphere, empty chair, no people, 16:9',
+    'modern desk with tablet device and small potted plant, soft focus background with greenery, bright airy mood, no people, lifestyle shot',
+    'neat workspace near window with laptop, pen and calendar on wooden surface, warm natural lighting, no people, 16:9',
+    'overhead flat-lay of notebook, pen, laptop, coffee cup and succulent on white desk, warm lighting, minimalist, no people, lifestyle photo',
   ]
-  const WORK_LIFE = [
-    'overhead view of person working on laptop at warm wooden desk, notebook and coffee cup beside, only hands visible, soft natural window light, cozy workspace, lifestyle stock photography',
-    'side angle of person writing in notebook at bright cafe table, laptop open, face turned away, shallow depth of field with bokeh, casual business attire',
-    'close-up of hands using tablet device on modern desk with small potted plant, soft focus background with greenery, bright airy mood, lifestyle shot',
-    'person reading documents at wooden desk near window, photographed from behind, warm morning light, cozy home-office aesthetic',
-    'overhead flat-lay of notebook, pen, laptop, coffee cup and succulent on clean white desk, warm natural lighting, minimalist workspace, no people',
+  const ABSTRACT = [
+    'empty straight road stretching to distant horizon under bright blue sky, journey concept, shallow focus, optimistic mood, no people, lifestyle photography',
+    'vintage pocket watch on wooden surface, extremely soft bokeh background, time management concept, warm natural light, no people, close-up',
+    'ascending wooden staircase in bright minimalist interior with large window and greenery, growth metaphor, natural daylight, no people',
+    'compass on wooden surface with soft golden bokeh, direction and purpose concept, no people, lifestyle aesthetic',
+    'morning sunlight streaming through window onto empty desk with coffee cup, new day concept, warm tones, minimalist, no people',
+    'open book with pen on wooden table, window light, learning concept, soft focus, warm atmosphere, no people, 16:9',
   ]
-  const CONCEPTUAL = [
-    'empty straight road stretching to distant horizon under bright blue sky, journey and decision concept, shallow focus on road, optimistic mood, lifestyle photography',
-    'close-up of hand holding vintage pocket watch, extremely soft pastel bokeh background, time management concept, warm natural light',
-    'ascending bright wooden staircase in modern minimalist interior with large window and greenery, growth metaphor, natural daylight, no people',
-    'single compass on rustic wooden surface, soft bokeh background with warm golden light, direction and purpose concept, lifestyle stock photo',
-    'morning sunlight streaming through large window onto empty wooden desk with single coffee cup, new day concept, warm golden tones, minimalist',
-  ]
-  const POSITIVE = [
-    'young person laughing freely wearing sunglasses, photographed from slightly below, bright blue sky background, casual stylish clothing, face partially visible, lifestyle stock photography, shallow depth of field',
-    'two colleagues high-fiving, shot from side angle showing hands meeting, bright modern setting, warm bokeh background, genuine joy, lifestyle photo',
-    'group of young professionals walking together outdoors, photographed from behind, bright daylight, casual business attire, team camaraderie',
-    'person stretching arms overhead at desk near bright window, photographed from behind, morning light, relaxed productive energy, lifestyle photography',
-    'close-up of two pairs of hands doing fist bump over bright desk, teamwork celebration, shallow depth of field, warm natural light, no faces visible',
+  const NATURE = [
+    'bright open field with blue sky and soft clouds, fresh green grass, freedom and possibility concept, natural daylight, no people, landscape',
+    'sunny park pathway with trees and dappled sunlight, inviting forward journey, bright mood, shallow depth of field, no people',
+    'modern glass building exterior reflecting blue sky, upward angle, aspirational architecture, bright daylight, no people',
+    'peaceful lake horizon under bright sky, calm water surface, tranquility concept, natural light, no people, minimalist landscape',
   ]
 
   function pick<T>(items: T[]): T {
     return items[Math.floor(Math.random() * items.length)]!
   }
 
-  const isIntrospection = /自分|過去|感情|認める|褒め|内省|振り返|モチベーション|自信|パラダイム/.test(text)
-  const isAction = /行動|実践|やってみ|チャレンジ|挑戦|仕掛け|習慣/.test(text)
-  const isTraining = /研修|トレーニング|セミナー|講座|ワークショップ|階層別/.test(text)
-  const isELearning = /eラーニング|オンライン学習|LMS|動画研修|オンボーディング/.test(text)
-  const isHR = /人事|採用|離職|定着|エンゲージメント|新入社員/.test(text)
-  const isLeadership = /リーダー|管理職|マネジメント|1on1|フィードバック|OJT/.test(text)
-  const isTeam = /チーム|組織|コミュニケーション|協力|連携|一体感/.test(text)
-  const isTime = /時間|計画|スケジュール|優先順位|効率|生産性/.test(text)
-  const isCareer = /キャリア|成長|スキル|育成|人材開発|可能性|将来/.test(text)
-  const isPositive = /褒められ|嬉しい|楽し|笑顔|感謝|誕生日|ポジティブ/.test(text)
-
-  let theme = ''
-
-  if (isIntrospection) {
-    theme = pick([...SILHOUETTE, ...CONCEPTUAL])
-  } else if (isPositive) {
-    theme = pick([...POSITIVE, ...SILHOUETTE])
-  } else if (isAction) {
-    theme = pick([...POSITIVE, ...SILHOUETTE, ...WORK_LIFE])
-  } else if (isTeam) {
-    theme = pick([...POSITIVE, ...WORK_LIFE])
-  } else if (isTraining) {
-    theme = pick([...WORK_LIFE, ...PASTEL_BG, ...SILHOUETTE])
-  } else if (isELearning) {
-    theme = pick([...WORK_LIFE, ...PASTEL_BG])
-  } else if (isHR) {
-    theme = pick([...WORK_LIFE, ...PASTEL_BG, ...POSITIVE])
-  } else if (isLeadership) {
-    theme = pick([...SILHOUETTE, ...CONCEPTUAL, ...WORK_LIFE])
-  } else if (isTime) {
-    theme = pick([...CONCEPTUAL, ...WORK_LIFE])
-  } else if (isCareer) {
-    theme = pick([...SILHOUETTE, ...CONCEPTUAL, ...POSITIVE])
-  } else {
-    theme = pick([...SILHOUETTE, ...WORK_LIFE, ...CONCEPTUAL, ...PASTEL_BG, ...POSITIVE])
-  }
+  const safePool = [...PASTEL_BG, ...WORKSPACE, ...ABSTRACT, ...NATURE]
+  const theme = pick(safePool)
 
   return [
     theme,
@@ -188,7 +148,8 @@ export function buildPrompt(title: string, content: string): string {
     'shallow depth of field with creamy bokeh',
     'bright airy optimistic mood with high key lighting',
     'pastel gradient tones or natural warm earth tones',
-    'faces turned away or back view or side profile or softly blurred',
+    'no people no faces no human figures no silhouettes',
+    'no hands no arms no body parts',
     'no readable text no watermark no logo',
     'horizontal 16:9 composition',
   ].join(', ')
