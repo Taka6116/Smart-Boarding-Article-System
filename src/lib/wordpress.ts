@@ -18,7 +18,6 @@ export interface WordPressPostResult {
   status: 'draft' | 'publish' | 'future';
 }
 
-import { getSupervisorBlockHtml } from './supervisorBlock'
 import { resolveCanonicalPostSlug } from './slugNormalize'
 import { normalizeWordPressTagsFromRequest } from './wordpressTags'
 import { decodeHtmlEntities } from './wpTagList'
@@ -46,39 +45,12 @@ function wpRestUrl(wpUrl: string, route: string): string {
   return `${base}/?rest_route=${encodeURIComponent(cleanRoute)}`
 }
 
-/** 監修者画像のデフォルト（WORDPRESSメディア投入後は環境変数で上書き推奨） */
-const DEFAULT_SUPERVISOR_IMAGE_URL = 'https://www.smartboarding.net/_cms_/wp-content/uploads/FCE_main_yokoRGB.png'
-
-/** 旧S3の監修者画像URL（このURLの場合はWordPressのURLに差し替える） */
-const LEGACY_S3_SUPERVISOR_PATTERN = /data-for-nas\.s3\.ap-northeast-1\.amazonaws\.com\/pictures\//i
-
 /** URLが http:// の場合は https:// に変換（Mixed Content 防止） */
 function forceHttps(url: string): string {
   if (url && url.startsWith('http://')) {
     return url.replace('http://', 'https://');
   }
   return url;
-}
-
-/**
- * 監修者画像のURLを実行時に取得。
- * 左の丸画像は必ずWordPressメディアライブラリのお顔画像を使用。
- * 優先: WORDPRESS_SUPERVISOR_IMAGE_URL > デフォルト（お顔画像URL）。S3/CloudFrontは使わない。
- * 返却URLは必ず https に統一（Mixed Content 防止）。
- */
-export function getSupervisorImageUrl(): string {
-  const wp = process.env.WORDPRESS_SUPERVISOR_IMAGE_URL?.trim();
-  if (wp) return forceHttps(wp);
-  const direct = process.env.SUPERVISOR_IMAGE_URL?.trim();
-  if (direct && !LEGACY_S3_SUPERVISOR_PATTERN.test(direct)) return forceHttps(direct);
-  return DEFAULT_SUPERVISOR_IMAGE_URL;
-}
-
-/** WordPress投稿本文用の監修者画像URL。メディアライブラリのURLを優先（下書きで表示される）。必ず https。 */
-export function getSupervisorImageUrlForWordPress(): string {
-  const wpUrl = process.env.WORDPRESS_SUPERVISOR_IMAGE_URL?.trim();
-  if (wpUrl) return forceHttps(wpUrl);
-  return getSupervisorImageUrl();
 }
 
 /* CTA バナーは Smart Boarding コラムでは使用しないため無効化 */
@@ -479,8 +451,7 @@ function buildArticleSchema(
     schemaImageUrl = forceHttps(payload.imageUrl);
   }
 
-  // description：FAQ 前の本文＋監修者除去後からプレーン化（一覧用抜粋と整合）
-  const bodyForDesc = splitFaqSection(stripLeadingSupervisorText(payload.content)).body;
+  const bodyForDesc = splitFaqSection(payload.content).body;
   const plainContent = stripHtmlAndDecodeEntities(bodyForDesc);
   const description = buildSchemaDescription(plainContent);
 
@@ -494,19 +465,11 @@ function buildArticleSchema(
     'description': description,
     'datePublished': options?.scheduledDate?.slice(0, 10) || new Date().toISOString().split('T')[0],
     'dateModified': options?.scheduledDate?.slice(0, 10) || new Date().toISOString().split('T')[0],
-    'author': [
-      {
-        '@type': 'Person',
-        'name': '石川 淳悦',
-        'jobTitle': '代表取締役社長',
-        'worksFor': {
-          '@type': 'Organization',
-          'name': '株式会社FCE',
-          'url': 'https://fce-hd.co.jp/',
-        },
-        'description': '法人向け教育研修・eラーニング事業を統括。Smart Boarding（スマートボーディング）を中心に人財育成ソリューションを展開。',
-      },
-    ],
+    'author': {
+      '@type': 'Organization',
+      'name': '株式会社FCE',
+      'url': 'https://fce-hd.co.jp/',
+    },
     'publisher': {
       '@type': 'Organization',
       'name': '株式会社FCE',
@@ -595,41 +558,14 @@ function buildFaqSchema(faqs: Array<{ question: string; answer: string }>): stri
   return `<script type="application/ld+json">\n${JSON.stringify(schema, null, 2)}\n</script>`;
 }
 
-/**
- * 本文先頭の「監修者：…」「実績：…」などの監修者テキストを除去する
- * （画像付き監修者ブロックを別挿入するため、テキストの二重表示を防ぐ）
- */
-function stripLeadingSupervisorText(content: string): string {
-  const lines = content.split('\n');
-  let i = 0;
-  while (i < lines.length) {
-    const trimmed = lines[i]!.trim();
-    if (!trimmed) {
-      i++;
-      continue;
-    }
-    if (
-      /^監修者[：:]\s*/.test(trimmed) ||
-      /^実績[：:]\s*/.test(trimmed) ||
-      /^株式会社FCE\s+代表/.test(trimmed) ||
-      /^石川\s*淳悦/.test(trimmed)
-    ) {
-      i++;
-      continue;
-    }
-    break;
-  }
-  return lines.slice(i).join('\n').replace(/^\n+/, '');
-}
-
 const EXCERPT_MAX_LENGTH = 120;
 
 /**
  * 記事本文から抜粋（excerpt）を生成する。
- * 監修者ブロック用テキストを除き、FAQ より前の本文の先頭段落から最大120文字を返す（一覧のリード表示用）。
+ * FAQ より前の本文の先頭段落から最大120文字を返す（一覧のリード表示用）。
  */
 function generateExcerpt(content: string): string {
-  const withoutSupervisor = stripLeadingSupervisorText(content);
+  const withoutSupervisor = content;
   const { body } = splitFaqSection(withoutSupervisor);
   const lines = body.split('\n');
   const paragraphLines: string[] = [];
@@ -719,8 +655,7 @@ function stripTextFaqFromHtml(html: string): string {
 
 /**
  * メインの投稿コンテンツを構築
- * 順序: 本文最上部に記事画像（アイキャッチと同じ）→ 監修者ブロック（画像付き）→ 記事本文 → Schema
- * @param bodyTopImageUrl ウェブアプリで作成した画像のURL（WordPressメディア）。本文最上部とアイキャッチに使用
+ * 順序: 本文最上部に記事画像（アイキャッチと同じ）→ 記事本文 → Schema
  */
 export function buildPostContent(
   payload: WordPressPostPayload,
@@ -728,11 +663,7 @@ export function buildPostContent(
 ): string {
   const slug = resolveCanonicalPostSlug(payload.slug);
 
-  // 0. 本文から先頭の監修者テキストを除去（画像付きブロックのみ表示するため）
-  const contentWithoutSupervisorText = stripLeadingSupervisorText(payload.content);
-
-  // 0-1. FAQセクションを本文から分離（convertToHtmlで見出し化されないように）
-  const { body: bodyText, faqSection } = splitFaqSection(contentWithoutSupervisorText);
+  const { body: bodyText, faqSection } = splitFaqSection(payload.content);
 
   // 1. 本文（FAQ除外）をHTMLに変換
   let htmlBody = convertToHtml(bodyText);
@@ -748,11 +679,7 @@ export function buildPostContent(
       ? `<img src="${options.bodyTopImageUrl}" style="width:100%;height:auto;margin-bottom:32px;display:block;" alt="${escapedTitle} — Smart Boarding" />`
       : '';
 
-  // 1-2. 監修者ブロック（プレビューと同一HTML＝supervisorBlock.tsで単一ソース化）
-  const supervisorImageUrl = getSupervisorImageUrlForWordPress();
-  const supervisorBlock = getSupervisorBlockHtml(supervisorImageUrl);
-
-  const fullBody = [bodyTopImageBlock, supervisorBlock, htmlBody].filter(Boolean).join('');
+  const fullBody = [bodyTopImageBlock, htmlBody].filter(Boolean).join('');
 
   // 2. FAQを抽出（分離したFAQセクション or 全文から）＋ question 重複除去
   const faqSource = faqSection || payload.content;
@@ -899,7 +826,7 @@ export async function postToWordPress(
     }
   }
 
-  // 投稿コンテンツ構築（本文最上部に記事画像 → 監修者ブロック → 本文）
+  // 投稿コンテンツ構築（本文最上部に記事画像 → 本文）
   const canonicalSlug = resolveCanonicalPostSlug(payload.slug);
   const payloadWithSlug: WordPressPostPayload = { ...payload, slug: canonicalSlug };
   const postContent = buildPostContent(payloadWithSlug, { bodyTopImageUrl, scheduledDate: options?.scheduledDate });

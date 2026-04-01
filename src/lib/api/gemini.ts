@@ -96,11 +96,6 @@ async function generateContentWithFallback(apiKey: string, prompt: string): Prom
 const TITLE_MARKER = '<<<TITLE>>>'
 const BODY_MARKER = '<<<BODY>>>'
 
-const SUPERVISOR_BLOCK = `監修者
-株式会社FCE 代表取締役社長
-石川 淳悦
-法人向けオンライントレーニング「Smart Boarding（スマートボーディング）」をはじめとする人財育成・教育研修サービスを展開。FCEグループとして、eラーニングと対面研修・人財コンサルティングを組み合わせた支援を推進している。`
-
 const FOOTER = `導入事例・事例集はこちらから
 https://www.smartboarding.net/documents/1978/`
 
@@ -114,14 +109,12 @@ export interface FirstDraftResult {
   content: string
 }
 
-/** 一次執筆・推敲本文から監修者テキストブロックを除去する */
+/** 一次執筆・推敲本文から監修者テキストブロックを除去する（レガシー互換） */
 function stripSupervisorText(content: string): string {
   if (!content) return content
   return content
     .replace(/.*監修者：株式会社FCE 代表取締役社長 石川 淳悦.*\n?/g, '')
     .replace(/.*監修者：株式会社日本提携支援.*\n?/g, '')
-    .replace(/.*実績：過去1,000件超のM(&amp;|&)A相談、50件超のアドバイザリー契約、15組超のM(&amp;|&)A成約組数を担当。.*\n?/g, '')
-    .replace(/.*\(株\)日本M(&amp;|&)Aセンターにて、年間最多アドバイザリー契約受賞経験あり。.*\n?/g, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
 }
@@ -164,7 +157,6 @@ export async function generateFirstDraftFromPrompt(
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 【Smart Boarding / FCE 固定情報】
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-・監修者プロフィールのテキストは本文に含めないでください。投稿時に画像ブロックで表示されます。
 ・末尾CTA（2行）：①「導入事例・事例集はこちらから https://www.smartboarding.net/documents/1978/」②「14日間無料トライアルはこちら https://www.smartboarding.net/trial/」をこの順で必ず含めること。
 ・「[ここに〜画像バナーを配置]」のようなプレースホルダー指示は絶対に出力しないこと。画像バナーの配置はシステム側で自動処理される。
 
@@ -181,7 +173,7 @@ export async function generateFirstDraftFromPrompt(
 ---
 （本文）
 
-※「---」の下には記事本文のみを記述してください。タイトル・監修者ブロックのテキストは含めないでください。
+※「---」の下には記事本文のみを記述してください。
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 【執筆テーマ・指示】
@@ -354,7 +346,6 @@ export async function refineArticleWithGemini(
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 【固定情報：推敲後も必ず維持すること】
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-・監修者プロフィールのテキストは本文に含めないでください。投稿時に画像ブロックで表示されます。
 ・末尾CTA：「導入事例・事例集はこちらから https://www.smartboarding.net/documents/1978/」
   「14日間無料トライアルはこちら https://www.smartboarding.net/trial/」の順で必ず含めること。
 
@@ -428,7 +419,7 @@ ${targetKeyword?.trim() ? `ターゲットキーワード：${targetKeyword}` : 
 ---
 （推敲後本文）
 
-※「---」の下には推敲後本文のみを記述してください。タイトル・監修者ブロックのテキストは含めないでください。`.trim()
+※「---」の下には推敲後本文のみを記述してください。`.trim()
 
   let text = await generateContentWithFallback(apiKey, prompt)
   // **太字** は維持。斜体(*単一*)と箇条書きの * のみ ・ に変換
