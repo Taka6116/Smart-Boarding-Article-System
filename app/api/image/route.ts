@@ -12,27 +12,29 @@ function pickRandom<T>(items: readonly T[]): T {
   return items[Math.floor(Math.random() * items.length)]!
 }
 
-/** buildPrompt 用: 文字・ロゴを要求しないビジネス系アーキタイプ（無地キューブのみ／人物シーンは顔を主にしない） */
+/** buildPrompt 用: 人材育成・eラーニング・研修をイメージするアーキタイプ */
 const ARCH_FLATLAY = [
-  'overhead flat-lay of business documents and laptop with abstract colorful charts only no legible text, pen and coffee cup on clean white desk, professional stock photography, no people',
-  'overhead flat-lay of financial printouts and abstract graphs, calculator and pen on white conference table, no readable numbers, no people, corporate photography',
-  'overhead view of clean white desk with documents, laptop showing abstract dashboard graphics, professional M&A advisory workspace, no people',
-  'overhead flat-lay of merger agreement stack, corporate stamp, pen and glasses on white desk, no people, professional stock photo',
-  'overhead flat-lay on white desk: business papers, two plain solid wooden cubes with no letters or engraving, laptop with abstract charts, pen, no people',
+  'overhead flat-lay of training materials and laptop with abstract LMS dashboard on screen, pen and notebook on clean white desk, professional stock photography, no people, no readable text',
+  'overhead flat-lay of HR analytics printouts with abstract bar charts, pen and tablet on white conference table, no readable numbers, no people, corporate photography',
+  'overhead view of clean white desk with training outline documents, laptop showing abstract course-progress UI, professional e-learning workspace, no people',
+  'overhead flat-lay of employee development plan documents, colorful sticky notes and pen on white desk, no people, no readable text, professional stock photo',
+  'overhead flat-lay on white desk: skill assessment papers, laptop with abstract learning dashboard, notebook and coffee cup, no people, no readable text',
 ] as const
 
 const ARCH_PEOPLE_DESK = [
-  'two business professionals in suits at bright white desk, open binder with colorful charts and tablet, hands reviewing documents in sharp focus, faces softly blurred or cropped, modern office, no camera-facing portrait',
-  'side view of business colleagues at desk with documents and tablet, emphasis on charts and materials, shallow depth of field, faces not dominant, bright professional office',
-  'modern office collaboration on light wooden desk, hands gesturing over laptop with abstract UI blocks, notebook and smartphone, strong bokeh, casual business shirt, second person blurred in background',
+  'two HR professionals at bright white desk, open binder with training schedule and tablet showing abstract dashboard, hands reviewing documents in sharp focus, faces softly blurred, modern office, no camera-facing portrait',
+  'side view of mentor coaching colleague at desk with documents and tablet, emphasis on materials, shallow depth of field, faces not dominant, bright professional office',
+  'modern office collaboration on light wooden desk, hands gesturing over laptop with abstract e-learning UI, notebook and smartphone, strong bokeh, casual business attire, second person blurred in background',
 ] as const
 
-const ARCH_SKYLINE = [
-  'dramatic low-angle worm-eye view of modern glass skyscrapers converging toward pale sky, cool blue-grey steel and glass facades, some warm lit windows, financial district, no people visible',
+const ARCH_TRAINING_ROOM = [
+  'bright modern training room with presenter pointing at screen showing abstract slides, audience seen from behind, professional daylight, no readable text on screen',
+  'wide shot of seminar room, participants with laptops and notebooks, abstract projection on whiteboard, no facial close-ups, professional corporate atmosphere',
 ] as const
 
-const ARCH_MEETING_WIDE = [
-  'wide shot of modern conference table, business team seen from behind with laptops and document binders, strategy meeting atmosphere, silhouettes, no facial close-ups',
+const ARCH_GROWTH = [
+  'upward staircase in bright corporate lobby with glass and greenery, aspirational growth metaphor, minimal abstract, no text, no people',
+  'modern office atrium with ascending pathway or stairway, bright natural lighting, skill development concept, no people visible',
 ] as const
 
 function getBedrockClient(): BedrockRuntimeClient {
@@ -183,47 +185,34 @@ export async function POST(request: NextRequest) {
 function buildPrompt(title: string, targetKeyword?: string): string {
   const text = title + (targetKeyword ?? '')
 
-  const isContract = /契約|NDA|秘密保持|意向表明/.test(text)
-  const isFinance = /補助金|税制|融資|資金|節税|バリュエーション|企業価値/.test(text)
-  const isPMI = /PMI|統合|経営統合/.test(text)
-  const isSuccession = /後継者|引継|承継/.test(text)
-  const isMA = /M&A|買収|合併|仲介|売却/.test(text)
+  const isTraining = /研修|トレーニング|セミナー|講座|ワークショップ/.test(text)
+  const isELearning = /eラーニング|オンライン学習|LMS|動画研修|オンボーディング/.test(text)
+  const isHR = /人事|採用|離職|定着|エンゲージメント|タレントマネジメント/.test(text)
+  const isLeadership = /リーダー|管理職|マネジメント|1on1|フィードバック|OJT/.test(text)
+  const isSkill = /スキル|育成|人材開発|キャリア|成長|組織開発/.test(text)
 
   let theme = ''
 
-  if (isContract) {
+  if (isTraining) {
+    theme = pickRandom([...ARCH_TRAINING_ROOM, ...ARCH_PEOPLE_DESK, ...ARCH_FLATLAY])
+  } else if (isELearning) {
     const pool = [
       ...ARCH_FLATLAY,
-      'overhead flat-lay of stacked business contract documents and fountain pen on white desk, abstract seals only no readable clauses, no people',
+      'person at modern desk with laptop showing abstract online learning UI with progress bar, headphones on desk, bright natural light, side angle, face not dominant, no readable text',
     ]
     theme = pickRandom(pool)
-  } else if (isFinance) {
-    const pool = [
-      ...ARCH_FLATLAY,
-      'overhead flat-lay of financial charts and business reports on clean white conference table, calculator and pen, abstract graphs only no legible figures, no people',
-    ]
-    theme = pickRandom(pool)
-  } else if (isPMI) {
-    theme = pickRandom([...ARCH_MEETING_WIDE, ...ARCH_PEOPLE_DESK, ...ARCH_FLATLAY])
-  } else if (isSuccession) {
-    const pool = [
-      'overhead flat-lay of business succession documents, company seal, pen and leather notebook on clean wooden desk, warm office lighting, no readable text, no people',
-      ...ARCH_FLATLAY,
-    ]
-    theme = pickRandom(pool)
-  } else if (isMA) {
-    const pool = [
-      ...ARCH_FLATLAY,
-      ...ARCH_PEOPLE_DESK,
-      ...ARCH_SKYLINE,
-      ...ARCH_MEETING_WIDE,
-    ]
-    theme = pickRandom(pool)
+  } else if (isHR) {
+    theme = pickRandom([...ARCH_PEOPLE_DESK, ...ARCH_FLATLAY, ...ARCH_TRAINING_ROOM])
+  } else if (isLeadership) {
+    theme = pickRandom([...ARCH_TRAINING_ROOM, ...ARCH_PEOPLE_DESK, ...ARCH_GROWTH])
+  } else if (isSkill) {
+    theme = pickRandom([...ARCH_GROWTH, ...ARCH_FLATLAY, ...ARCH_PEOPLE_DESK])
   } else {
     theme = pickRandom([
       ...ARCH_FLATLAY,
-      ...ARCH_SKYLINE,
-      'overhead flat-lay of Japanese business documents, notebook, pen and laptop with abstract screen, clean office desk, no people',
+      ...ARCH_GROWTH,
+      ...ARCH_TRAINING_ROOM,
+      'overhead flat-lay of Japanese HR training documents, notebook, pen and laptop with abstract screen, clean office desk, no people, no readable text',
     ])
   }
 
@@ -231,9 +220,9 @@ function buildPrompt(title: string, targetKeyword?: string): string {
     theme,
     'professional Japanese corporate photography',
     'photorealistic high quality',
-    'navy blue white grey color palette',
+    'sky blue white light grey color palette',
     'soft natural window lighting',
-    'corporate editorial stock style, no selfie, avoid extreme glamor portrait close-ups',
+    'corporate editorial stock style for HR and training, no selfie, avoid extreme glamor portrait close-ups',
     'no readable text no watermark no logo, abstract charts only',
     'horizontal 16:9 composition',
   ].join(', ')

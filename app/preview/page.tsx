@@ -4,50 +4,8 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState, useEffect, Suspense } from 'react'
 import StepIndicator from '@/components/editor/StepIndicator'
 import type { Step } from '@/lib/types'
-import { getSupervisorBlockHtml } from '@/lib/supervisorBlock'
 
-const SUPERVISOR_FACE_IMAGE_URL = 'http://nihon-teikei.co.jp/wp-content/uploads/2026/03/3159097ae625791c1a400e6900330153.png'
-
-function getPreviewCtaBannerHtml(): string {
-  const cloudFrontUrl = process.env.NEXT_PUBLIC_CLOUDFRONT_URL?.trim()
-  const bannerUrl = cloudFrontUrl
-    ? `${cloudFrontUrl}/data-for-nas/pictures/NTS+CTA+%E9%9B%BB%E8%A9%B1%E7%95%AA%E5%8F%B7%E4%BB%98%E3%81%8D.png`
-    : 'https://data-for-nas.s3.ap-northeast-1.amazonaws.com/pictures/NTS+CTA+%E9%9B%BB%E8%A9%B1%E7%95%AA%E5%8F%B7%E4%BB%98%E3%81%8D.png'
-  return `<div style="text-align:center;margin:40px 0;padding:0;"><a href="https://www.smartboarding.net/contact/" target="_blank" rel="noopener noreferrer" style="display:inline-block;text-decoration:none;"><img src="${bannerUrl}" alt="Smart Boarding へのお問い合わせ・ご相談" style="max-width:100%;width:700px;height:auto;border:none;border-radius:8px;" loading="lazy" /></a></div>`
-}
-
-function insertCtaBannersForPreview(html: string): string {
-  const cta = getPreviewCtaBannerHtml()
-  const matomeRegex = /<h2[^>]*>[^<]*まとめ[^<]*<\/h2>/gi
-  const matomeMatch = matomeRegex.exec(html)
-  if (matomeMatch) {
-    return html.slice(0, matomeMatch.index) + cta + '\n' + html.slice(matomeMatch.index)
-  }
-  const matomeBlockRegex = /<(h2|h3|p)[^>]*>\s*(?:<strong>)?\s*まとめ[\s\S]*?<\/\1>/i
-  const matomeBlockMatch = matomeBlockRegex.exec(html)
-  if (matomeBlockMatch && matomeBlockMatch.index !== undefined) {
-    return html.slice(0, matomeBlockMatch.index) + cta + '\n' + html.slice(matomeBlockMatch.index)
-  }
-  const h2Regex = /<h2[\s>]/gi
-  let match: RegExpExecArray | null
-  const positions: number[] = []
-  while ((match = h2Regex.exec(html)) !== null) {
-    positions.push(match.index)
-  }
-  if (positions.length >= 2) {
-    const lastPos = positions[positions.length - 1]!
-    return html.slice(0, lastPos) + cta + '\n' + html.slice(lastPos)
-  }
-  return html + '\n' + cta
-}
-
-function formatContent(content: string, imageUrl: string): string {
-  const imageHtml = imageUrl
-    ? `<img src="${imageUrl}" style="width:100%;height:auto;margin-bottom:32px;display:block;" alt="" />`
-    : ''
-
-  const supervisorBlock = getSupervisorBlockHtml(SUPERVISOR_FACE_IMAGE_URL)
-
+function formatContent(content: string): string {
   const H2_STYLE = "font-size:22px;font-weight:900;margin:48px 0 16px;padding-bottom:8px;border-bottom:3px solid #33B5E5;font-family:'Noto Sans JP',sans-serif;"
   const H3_STYLE = 'font-size:18px;font-weight:400;margin:32px 0 12px;color:#111;'
   const P_STYLE = 'margin-bottom:1.6em;'
@@ -110,9 +68,7 @@ function formatContent(content: string, imageUrl: string): string {
       '<a href="https://www.smartboarding.net/trial/" target="_blank" rel="noopener noreferrer" style="color:#33B5E5;text-decoration:underline;">14日間無料トライアルはこちら</a>'
     )
 
-  bodyHtml = insertCtaBannersForPreview(bodyHtml)
-
-  return imageHtml + supervisorBlock + bodyHtml
+  return bodyHtml
 }
 
 /* ─────────────────── Header nav items ─────────────────── */
@@ -192,8 +148,8 @@ function PreviewContent() {
   const articleId = searchParams.get('articleId') || ''
 
   const formattedContent = useMemo(
-    () => formatContent(content, imageUrl),
-    [content, imageUrl]
+    () => formatContent(content),
+    [content]
   )
 
   const handlePublish = useCallback(() => {
