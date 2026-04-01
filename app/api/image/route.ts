@@ -12,29 +12,54 @@ function pickRandom<T>(items: readonly T[]): T {
   return items[Math.floor(Math.random() * items.length)]!
 }
 
-/** buildPrompt 用: 人材育成・eラーニング・研修をイメージするアーキタイプ */
-const ARCH_FLATLAY = [
-  'overhead flat-lay of training materials and laptop with abstract LMS dashboard on screen, pen and notebook on clean white desk, professional stock photography, no people, no readable text',
-  'overhead flat-lay of HR analytics printouts with abstract bar charts, pen and tablet on white conference table, no readable numbers, no people, corporate photography',
-  'overhead view of clean white desk with training outline documents, laptop showing abstract course-progress UI, professional e-learning workspace, no people',
-  'overhead flat-lay of employee development plan documents, colorful sticky notes and pen on white desk, no people, no readable text, professional stock photo',
-  'overhead flat-lay on white desk: skill assessment papers, laptop with abstract learning dashboard, notebook and coffee cup, no people, no readable text',
+/* ─────────────────────────────────────────────────────────
+ * Smart Boarding サムネイル画像アーキタイプ
+ * 実際のコラム記事サムネの特徴に合わせたライフスタイル系プロンプト
+ * 5 パターン × 各 3-5 バリエーション = 高い多様性
+ * ───────────────────────────────────────────────────────── */
+
+/** パターンA: パステルグラデーション背景（テキスト余白あり） */
+const ARCH_PASTEL_BG = [
+  'soft pastel gradient background from pale pink to white, clean minimalist composition with large empty center space, subtle silhouettes of 3-4 business people in lower third, bright airy mood, lifestyle stock photography, 16:9',
+  'gentle gradient background from mint green to cream white, abstract soft bokeh circles, minimalist corporate lifestyle aesthetic, large negative space in center, warm inviting mood, professional stock photo, 16:9',
+  'sky blue to lavender soft gradient background, clean modern minimalist composition, faint abstract geometric shapes, bright and optimistic, professional lifestyle photography, 16:9',
+  'warm peach to cream gradient background with soft light flares, minimalist clean layout, abstract pastel shapes, bright hopeful mood, no people, lifestyle stock aesthetic, 16:9',
 ] as const
 
-const ARCH_PEOPLE_DESK = [
-  'two HR professionals at bright white desk, open binder with training schedule and tablet showing abstract dashboard, hands reviewing documents in sharp focus, faces softly blurred, modern office, no camera-facing portrait',
-  'side view of mentor coaching colleague at desk with documents and tablet, emphasis on materials, shallow depth of field, faces not dominant, bright professional office',
-  'modern office collaboration on light wooden desk, hands gesturing over laptop with abstract e-learning UI, notebook and smartphone, strong bokeh, casual business attire, second person blurred in background',
+/** パターンB: 人物シルエット・後ろ姿（感情・成長表現） */
+const ARCH_SILHOUETTE = [
+  'back view of person with arms raised wide toward bright sky at golden hour, silhouette against warm sunset, freedom and personal growth concept, shallow depth of field, warm orange and pink tones, lifestyle stock photography',
+  'rear view of young professional walking confidently on open road toward horizon, early morning light with long shadows, aspirational journey concept, natural outdoor setting, photorealistic lifestyle shot',
+  'side profile silhouette of person looking up at expansive bright sky, contemplative and hopeful mood, soft creamy bokeh background, golden hour natural light, warm color palette',
+  'person jumping with joy photographed from behind, outdoor park or field setting, bright sunny daylight, blurred green background, energetic and positive, lifestyle stock photo',
+  'back view of person standing on hilltop overlooking vast landscape, dawn light, sense of possibility and new beginnings, shallow depth of field, warm tones',
 ] as const
 
-const ARCH_TRAINING_ROOM = [
-  'bright modern training room with presenter pointing at screen showing abstract slides, audience seen from behind, professional daylight, no readable text on screen',
-  'wide shot of seminar room, participants with laptops and notebooks, abstract projection on whiteboard, no facial close-ups, professional corporate atmosphere',
+/** パターンC: ワークライフスタイル（顔見えず・デスク・カフェ） */
+const ARCH_WORK_LIFESTYLE = [
+  'overhead view of person working on laptop at warm wooden desk, notebook and coffee cup beside, only hands and forearms visible, soft natural window light, cozy productive workspace, lifestyle stock photography',
+  'side angle of person writing in notebook at bright cafe table, laptop open, face turned away from camera, shallow depth of field with bokeh, natural daylight through window, casual business attire',
+  'close-up of hands using tablet device on modern desk with small potted plant, soft focus background with greenery and window light, bright airy mood, professional lifestyle shot',
+  'person reading documents at wooden desk near window, photographed from behind showing shoulders and desk, warm morning light, notebook and pen, cozy home-office aesthetic, lifestyle photography',
+  'overhead flat-lay of notebook, pen, laptop, coffee cup and small succulent plant on clean white desk, warm natural lighting, minimalist productive workspace, no people, lifestyle stock photo',
 ] as const
 
-const ARCH_GROWTH = [
-  'upward staircase in bright corporate lobby with glass and greenery, aspirational growth metaphor, minimal abstract, no text, no people',
-  'modern office atrium with ascending pathway or stairway, bright natural lighting, skill development concept, no people visible',
+/** パターンD: コンセプチュアル・抽象（道・時計・階段メタファー） */
+const ARCH_CONCEPTUAL = [
+  'empty straight road stretching to distant horizon under bright blue sky with scattered clouds, journey and decision concept, shallow focus on road surface, natural sunlit landscape, optimistic mood, lifestyle photography',
+  'close-up of hand holding vintage pocket watch or small clock, extremely soft pastel bokeh background, time management concept, warm natural light, lifestyle photography aesthetic',
+  'ascending bright wooden staircase in modern minimalist interior with large window and greenery, growth metaphor, natural daylight flooding in, clean airy composition, no people',
+  'single compass on rustic wooden surface, soft bokeh background with warm golden light, direction and purpose concept, close-up macro, lifestyle stock photo aesthetic',
+  'morning sunlight streaming through large window onto empty wooden desk with single coffee cup, new day fresh start concept, warm golden tones, minimalist clean composition',
+] as const
+
+/** パターンE: ポジティブ感情（笑顔・活力・カジュアル） */
+const ARCH_POSITIVE = [
+  'young person laughing freely wearing sunglasses, photographed from slightly below, bright blue sky background, peace sign gesture, casual stylish clothing, face partially visible, lifestyle stock photography, shallow depth of field',
+  'two colleagues high-fiving or celebrating success, shot from side angle showing hands meeting, bright modern office or outdoor setting, warm bokeh background, genuine joy and energy, lifestyle photo',
+  'group of young professionals walking together outdoors, photographed from behind, bright daylight and long shadows, casual business attire, team camaraderie, lifestyle stock photo',
+  'person stretching arms overhead at desk near bright window, photographed from behind, morning light, relaxed productive energy, modern clean workspace, lifestyle photography',
+  'close-up of two pairs of hands doing fist bump over bright desk surface, teamwork celebration, shallow depth of field, warm natural light, no faces visible, positive mood',
 ] as const
 
 function getBedrockClient(): BedrockRuntimeClient {
@@ -86,10 +111,12 @@ export async function POST(request: NextRequest) {
       prompt = await generateImagePromptFromArticle(title.trim(), trimmedContent)
       prompt = [
         prompt,
-        'Professional corporate stock photography',
-        'High quality photorealistic',
+        'Lifestyle stock photography aesthetic similar to Unsplash or Adobe Stock',
+        'High quality photorealistic with shallow depth of field and creamy bokeh',
+        'Bright airy optimistic mood with soft natural lighting or golden hour glow',
+        'Pastel gradient tones or natural warm earth tones',
+        'Faces turned away or back view or softly blurred, no direct camera-facing portraits',
         'No readable text numbers logos or watermarks anywhere',
-        'Abstract charts and screens only without legible labels',
         'Horizontal 16:9',
       ].join(', ')
     } catch (e) {
@@ -103,16 +130,18 @@ export async function POST(request: NextRequest) {
   const requestBody = {
     prompt,
     negative_prompt: [
-      'portrait, headshot, close-up face, selfie, beauty glamor model shot',
+      'direct camera-facing portrait, headshot, close-up face, selfie, beauty glamor model shot',
       'revealing clothing, cleavage, exposed skin',
       'western faces, caucasian, blonde',
+      'formal dark suit, stiff corporate conference room, boardroom',
       'text, typography, watermark, logo, subtitle, caption',
       'readable text, legible numbers, gibberish letters, random letters, floating letters',
       'carved letters on wood, alphabet blocks, letter cubes, engraved symbols on cubes',
       'garbled UI text, meaningless digits on paper, newspaper headline',
-      'cartoon, anime, illustration, painting',
-      'low quality, blurry, distorted, deformed',
-      'bright neon colors, colorful',
+      'cartoon, anime, illustration, painting, 3D render',
+      'low quality, blurry, distorted, deformed, oversaturated',
+      'dark moody atmosphere, dramatic shadows, noir lighting',
+      'bright neon colors, harsh fluorescent lighting',
       'nsfw, inappropriate',
       'extra fingers, missing fingers, fused fingers, deformed hands, mutated hands',
       'six fingers, too many fingers, bad hands, malformed hands, extra limbs',
@@ -185,45 +214,59 @@ export async function POST(request: NextRequest) {
 function buildPrompt(title: string, targetKeyword?: string): string {
   const text = title + (targetKeyword ?? '')
 
-  const isTraining = /研修|トレーニング|セミナー|講座|ワークショップ/.test(text)
+  const isIntrospection = /自分|過去|感情|認める|褒め|内省|振り返|モチベーション|自信|パラダイム/.test(text)
+  const isAction = /行動|実践|やってみ|チャレンジ|挑戦|仕掛け|習慣/.test(text)
+  const isTraining = /研修|トレーニング|セミナー|講座|ワークショップ|階層別/.test(text)
   const isELearning = /eラーニング|オンライン学習|LMS|動画研修|オンボーディング/.test(text)
-  const isHR = /人事|採用|離職|定着|エンゲージメント|タレントマネジメント/.test(text)
+  const isHR = /人事|採用|離職|定着|エンゲージメント|タレントマネジメント|新入社員/.test(text)
   const isLeadership = /リーダー|管理職|マネジメント|1on1|フィードバック|OJT/.test(text)
-  const isSkill = /スキル|育成|人材開発|キャリア|成長|組織開発/.test(text)
+  const isTeam = /チーム|組織|コミュニケーション|協力|連携|一体感/.test(text)
+  const isTime = /時間|計画|スケジュール|優先順位|効率|生産性/.test(text)
+  const isCareer = /キャリア|成長|スキル|育成|人材開発|可能性|将来/.test(text)
+  const isPositive = /褒められ|嬉しい|楽し|笑顔|感謝|誕生日|ポジティブ/.test(text)
 
   let theme = ''
 
-  if (isTraining) {
-    theme = pickRandom([...ARCH_TRAINING_ROOM, ...ARCH_PEOPLE_DESK, ...ARCH_FLATLAY])
+  if (isIntrospection) {
+    theme = pickRandom([...ARCH_SILHOUETTE, ...ARCH_CONCEPTUAL])
+  } else if (isPositive) {
+    theme = pickRandom([...ARCH_POSITIVE, ...ARCH_SILHOUETTE])
+  } else if (isAction) {
+    theme = pickRandom([...ARCH_POSITIVE, ...ARCH_SILHOUETTE, ...ARCH_WORK_LIFESTYLE])
+  } else if (isTeam) {
+    theme = pickRandom([...ARCH_POSITIVE, ...ARCH_WORK_LIFESTYLE])
+  } else if (isTraining) {
+    theme = pickRandom([...ARCH_WORK_LIFESTYLE, ...ARCH_PASTEL_BG, ...ARCH_SILHOUETTE])
   } else if (isELearning) {
-    const pool = [
-      ...ARCH_FLATLAY,
-      'person at modern desk with laptop showing abstract online learning UI with progress bar, headphones on desk, bright natural light, side angle, face not dominant, no readable text',
-    ]
-    theme = pickRandom(pool)
+    theme = pickRandom([...ARCH_WORK_LIFESTYLE, ...ARCH_PASTEL_BG])
   } else if (isHR) {
-    theme = pickRandom([...ARCH_PEOPLE_DESK, ...ARCH_FLATLAY, ...ARCH_TRAINING_ROOM])
+    theme = pickRandom([...ARCH_WORK_LIFESTYLE, ...ARCH_PASTEL_BG, ...ARCH_POSITIVE])
   } else if (isLeadership) {
-    theme = pickRandom([...ARCH_TRAINING_ROOM, ...ARCH_PEOPLE_DESK, ...ARCH_GROWTH])
-  } else if (isSkill) {
-    theme = pickRandom([...ARCH_GROWTH, ...ARCH_FLATLAY, ...ARCH_PEOPLE_DESK])
+    theme = pickRandom([...ARCH_SILHOUETTE, ...ARCH_CONCEPTUAL, ...ARCH_WORK_LIFESTYLE])
+  } else if (isTime) {
+    theme = pickRandom([...ARCH_CONCEPTUAL, ...ARCH_WORK_LIFESTYLE])
+  } else if (isCareer) {
+    theme = pickRandom([...ARCH_SILHOUETTE, ...ARCH_CONCEPTUAL, ...ARCH_POSITIVE])
   } else {
     theme = pickRandom([
-      ...ARCH_FLATLAY,
-      ...ARCH_GROWTH,
-      ...ARCH_TRAINING_ROOM,
-      'overhead flat-lay of Japanese HR training documents, notebook, pen and laptop with abstract screen, clean office desk, no people, no readable text',
+      ...ARCH_SILHOUETTE,
+      ...ARCH_WORK_LIFESTYLE,
+      ...ARCH_CONCEPTUAL,
+      ...ARCH_PASTEL_BG,
+      ...ARCH_POSITIVE,
     ])
   }
 
   return [
     theme,
-    'professional Japanese corporate photography',
-    'photorealistic high quality',
-    'sky blue white light grey color palette',
-    'soft natural window lighting',
-    'corporate editorial stock style for HR and training, no selfie, avoid extreme glamor portrait close-ups',
-    'no readable text no watermark no logo, abstract charts only',
+    'lifestyle stock photography aesthetic similar to Unsplash or Adobe Stock',
+    'photorealistic high quality with professional composition',
+    'soft natural window lighting or golden hour glow',
+    'shallow depth of field with creamy bokeh',
+    'bright airy optimistic mood with high key lighting',
+    'pastel gradient tones or natural warm earth tones',
+    'faces turned away or back view or side profile or softly blurred',
+    'no readable text no watermark no logo',
     'horizontal 16:9 composition',
   ].join(', ')
 }
