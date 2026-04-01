@@ -2,7 +2,7 @@ import { postToWordPress } from '@/lib/wordpress'
 
 export async function POST(request: Request) {
   const body = await request.json()
-  const { title, content, targetKeyword, imageUrl, slug, status, scheduledDate, wordpressTags } = body
+  const { title, content, targetKeyword, imageUrl, slug, status, scheduledDate, wordpressTags, categoryIds } = body
 
   if (!title?.trim() || !content?.trim()) {
     return Response.json(
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
         wordpressTags,
       },
       status ?? 'draft',
-      { scheduledDate }
+      { scheduledDate, categoryIds }
     )
 
     return Response.json({

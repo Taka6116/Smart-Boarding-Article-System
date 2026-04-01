@@ -25,6 +25,8 @@ export interface ArticleData {
   wordpressPostStatus?: string
   /** WordPress の post_tag 用（パース済みのタグ名の配列） */
   wordpressTags?: string[]
+  /** WordPress の column__category 用（カテゴリーID配列） */
+  wordpressCategoryIds?: number[]
 }
 
 export type ArticleStatus = 'draft' | 'ready' | 'published'
@@ -47,6 +49,8 @@ export interface SavedArticle {
   slug?: string
   /** WordPress post_tag 用タグ名（保存・予約投稿で引き継ぎ） */
   wordpressTags?: string[]
+  /** WordPress column__category 用カテゴリーID */
+  wordpressCategoryIds?: number[]
   wordCount: number
 }
 

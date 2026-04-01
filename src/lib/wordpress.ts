@@ -785,7 +785,7 @@ async function resolveWordPressTagIds(
 export async function postToWordPress(
   payload: WordPressPostPayload,
   status: 'draft' | 'publish' | 'future' = 'draft',
-  options?: { scheduledDate?: string }
+  options?: { scheduledDate?: string; categoryIds?: number[] }
 ): Promise<WordPressPostResult> {
   const wpUrl = process.env.WORDPRESS_URL?.trim();
   const username = process.env.WORDPRESS_USERNAME?.trim();
@@ -801,8 +801,9 @@ export async function postToWordPress(
   }
 
   const rawCategoryId = process.env.WORDPRESS_CATEGORY_ID?.trim() || '68';
-  const categoryId = parseInt(rawCategoryId, 10);
-  const safeCategoryId = Number.isNaN(categoryId) || categoryId < 1 ? 68 : categoryId;
+  const defaultCategoryId = parseInt(rawCategoryId, 10);
+  const safeDefaultCategoryId = Number.isNaN(defaultCategoryId) || defaultCategoryId < 1 ? 68 : defaultCategoryId;
+  const resolvedCategoryIds = options?.categoryIds?.length ? options.categoryIds : [safeDefaultCategoryId];
 
   // Basic認証のトークンを生成
   const credentials = Buffer.from(`${username}:${appPassword}`).toString('base64');
@@ -856,7 +857,7 @@ export async function postToWordPress(
         slug: canonicalSlug,
         ...(mediaId ? { featured_media: mediaId } : {}),
         ...(status === 'future' && options?.scheduledDate ? { date: options.scheduledDate } : {}),
-        column__category: [safeCategoryId],
+        column__category: resolvedCategoryIds,
         ...(tagIds && tagIds.length > 0 ? { tags: tagIds } : {}),
       }),
     });

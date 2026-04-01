@@ -9,6 +9,7 @@ import { ArrowLeft, CheckCircle, ExternalLink, FileText, Image as ImageIcon, Typ
 import { maAdvisorDateFallbackSlug, resolveCanonicalPostSlug } from '@/lib/slugNormalize'
 import type { WordPressPublishChoice } from '@/lib/wordpressPublishChoice'
 import WordPressTagsField from '@/components/editor/WordPressTagsField'
+import WordPressCategoryField from '@/components/editor/WordPressCategoryField'
 import {
   getDefaultFutureScheduleInputs,
   isLocalScheduleInFuture,
@@ -40,6 +41,8 @@ interface PublishResultProps {
   onRefinedContentChange?: (content: string) => void
   wordpressTagsInput?: string
   onWordpressTagsInputChange?: (value: string) => void
+  wordpressCategoryIds?: number[]
+  onWordpressCategoryIdsChange?: (ids: number[]) => void
   slug?: string
   onSlugChange?: (slug: string) => void
   /** 推敲APIが返した英語スラッグ（全体）。ユーザーが空欄にしてもここは上書きしない */
@@ -59,6 +62,8 @@ export default function PublishResult({
   onRefinedContentChange,
   wordpressTagsInput = '',
   onWordpressTagsInputChange,
+  wordpressCategoryIds = [68],
+  onWordpressCategoryIdsChange,
   slug = '',
   onSlugChange,
   refineSlugSuggestion = '',
@@ -278,6 +283,15 @@ export default function PublishResult({
                           />
                         </div>
                       )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-full min-w-0">
+                      <WordPressCategoryField
+                        selectedIds={wordpressCategoryIds}
+                        onChange={ids => onWordpressCategoryIdsChange?.(ids)}
+                      />
                     </div>
                   </div>
 

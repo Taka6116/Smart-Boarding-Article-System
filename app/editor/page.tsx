@@ -80,6 +80,7 @@ function EditorContent() {
   const [slug, setSlug] = useState('')
   const [refineSlugSuggestion, setRefineSlugSuggestion] = useState('')
   const [wordpressTagsInput, setWordpressTagsInput] = useState('')
+  const [wordpressCategoryIds, setWordpressCategoryIds] = useState<number[]>([68])
   const prevStepRef = useRef<Step>(1)
 
   useEffect(() => {
@@ -101,11 +102,13 @@ function EditorContent() {
           wordpressUrl: savedArticle.wordpressUrl,
           wordpressPostStatus: savedArticle.wordpressPostStatus,
           wordpressTags: savedArticle.wordpressTags ?? [],
+          wordpressCategoryIds: savedArticle.wordpressCategoryIds ?? [68],
         })
         setCurrentArticleId(savedArticle.id)
         setSlug(savedArticle.slug || '')
         setRefineSlugSuggestion(savedArticle.slug || '')
         setWordpressTagsInput((savedArticle.wordpressTags ?? []).join('、'))
+        setWordpressCategoryIds(savedArticle.wordpressCategoryIds ?? [68])
         const parsedStep = Number(stepParam)
         if (parsedStep === 4) {
           const content = applyInternalLinksToText(
@@ -141,7 +144,11 @@ function EditorContent() {
         ...saved.article,
         internalLinks: saved.article.internalLinks ?? [],
         wordpressTags: saved.article.wordpressTags ?? [],
+        wordpressCategoryIds: saved.article.wordpressCategoryIds ?? [68],
       })
+      if (saved.article.wordpressCategoryIds?.length) {
+        setWordpressCategoryIds(saved.article.wordpressCategoryIds)
+      }
       // 旧4ステップの「投稿」は新ステップ5にマッピング
       const step = saved.currentStep as number
       const mappedStep = step === 4 ? 5 : step
@@ -342,6 +349,7 @@ function EditorContent() {
         scheduledDate: existing?.scheduledDate,
         slug: slug.trim() || existing?.slug || undefined,
         wordpressTags: tags.length ? tags : undefined,
+        wordpressCategoryIds: wordpressCategoryIds.length ? wordpressCategoryIds : undefined,
         wordCount: article.refinedContent.length,
       })
     } catch (e) {
@@ -351,7 +359,7 @@ function EditorContent() {
 
     setToastMessage('下書きを保存しました')
     return id
-  }, [article, currentArticleId, searchParams, slug, wordpressTagsInput, updateArticle])
+  }, [article, currentArticleId, searchParams, slug, wordpressTagsInput, wordpressCategoryIds, updateArticle])
 
   const handleRegenerate = useCallback(async () => {
     setFireflyStatus('loading')
@@ -405,6 +413,7 @@ function EditorContent() {
         slug: slug.trim() || undefined,
         status: wpStatus,
         wordpressTags: tags.length ? tags : undefined,
+        categoryIds: wordpressCategoryIds.length ? wordpressCategoryIds : undefined,
       }
       if (choice.type === 'future') {
         body.scheduledDate = choice.scheduledDateTime
@@ -421,6 +430,7 @@ function EditorContent() {
         wordpressUrl: data.wordpressUrl,
         wordpressPostStatus: data.status,
         wordpressTags: tags,
+        wordpressCategoryIds,
       })
 
       const nextArticleStatus = choice.type === 'draft' ? 'ready' : 'published'
@@ -442,6 +452,7 @@ function EditorContent() {
             wordpressUrl: data.wordpressUrl,
             wordpressPostStatus: data.status,
             wordpressTags: tags.length ? tags : undefined,
+            wordpressCategoryIds: wordpressCategoryIds.length ? wordpressCategoryIds : undefined,
             ...scheduleFields,
           })
         } else {
@@ -470,6 +481,7 @@ function EditorContent() {
           wordCount: article.refinedContent.length,
           slug: slug.trim() || undefined,
           wordpressTags: tags.length ? tags : undefined,
+          wordpressCategoryIds: wordpressCategoryIds.length ? wordpressCategoryIds : undefined,
           ...scheduleFields,
         })
       }
@@ -487,6 +499,7 @@ function EditorContent() {
     article.internalLinks,
     article.imageUrl,
     wordpressTagsInput,
+    wordpressCategoryIds,
     currentArticleId,
     slug,
     updateArticle,
@@ -616,6 +629,11 @@ function EditorContent() {
           onWordpressTagsInputChange={v => {
             setWordpressTagsInput(v)
             updateArticle({ wordpressTags: parseWordPressTagsInput(v) })
+          }}
+          wordpressCategoryIds={wordpressCategoryIds}
+          onWordpressCategoryIdsChange={ids => {
+            setWordpressCategoryIds(ids)
+            updateArticle({ wordpressCategoryIds: ids })
           }}
           slug={slug}
           onSlugChange={setSlug}
