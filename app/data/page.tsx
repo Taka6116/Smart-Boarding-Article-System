@@ -56,6 +56,7 @@ export default function DataPage() {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState(false)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   const fetchFiles = useCallback(async () => {
     setLoading(true)
@@ -106,7 +107,6 @@ export default function DataPage() {
 
   const handleDelete = useCallback(
     async (id: string) => {
-      if (!confirm('このファイルを削除しますか？')) return
       try {
         const res = await fetch(`/api/data/files?id=${encodeURIComponent(id)}`, {
           method: 'DELETE',
@@ -225,7 +225,7 @@ export default function DataPage() {
                           </a>
                           <button
                             type="button"
-                            onClick={() => handleDelete(f.id)}
+                            onClick={() => setConfirmDeleteId(f.id)}
                             className="p-2 rounded-lg text-[#64748B] hover:bg-red-50 hover:text-red-600 transition-colors"
                             title="削除"
                           >
@@ -241,6 +241,44 @@ export default function DataPage() {
           </div>
         )}
       </div>
+
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div
+            className="w-full max-w-md rounded-xl p-6 space-y-4"
+            style={{ background: 'white', boxShadow: '0 10px 25px rgba(15,23,42,0.18)' }}
+          >
+            <h2 className="text-base font-semibold" style={{ color: '#1A1A2E' }}>
+              このファイルを削除しますか？
+            </h2>
+            <p className="text-sm" style={{ color: '#64748B' }}>
+              削除すると元に戻せません。
+            </p>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteId(null)}
+                className="px-4 py-2 rounded-lg text-sm font-medium"
+                style={{ background: '#E2E8F0', color: '#1F2933' }}
+              >
+                キャンセル
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  await handleDelete(confirmDeleteId)
+                  setConfirmDeleteId(null)
+                }}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
+                style={{ background: '#DC2626', color: 'white' }}
+              >
+                <Trash2 size={14} />
+                削除する
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

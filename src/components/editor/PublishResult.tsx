@@ -8,7 +8,6 @@ import Button from '@/components/ui/Button'
 import { ArrowLeft, CheckCircle, ExternalLink, FileText, Image as ImageIcon, Type, Link as LinkIcon, Tag } from 'lucide-react'
 import { maAdvisorDateFallbackSlug, resolveCanonicalPostSlug } from '@/lib/slugNormalize'
 import type { WordPressPublishChoice } from '@/lib/wordpressPublishChoice'
-import WordPressTagsField from '@/components/editor/WordPressTagsField'
 import WordPressCategoryField from '@/components/editor/WordPressCategoryField'
 import {
   getDefaultFutureScheduleInputs,
@@ -299,9 +298,15 @@ export default function PublishResult({
                     <Tag size={16} className="text-[#64748B] mt-0.5 flex-shrink-0" />
                     <div className="w-full min-w-0">
                       <p className="text-xs font-mono text-[#64748B] mb-1">WordPressタグ</p>
-                      <WordPressTagsField
+                      <p className="text-[11px] text-[#94A3B8] mb-1.5">
+                        カンマ区切りで入力してください（例: eラーニング、オンボーディング、管理職研修）
+                      </p>
+                      <input
+                        type="text"
                         value={wordpressTagsInput}
-                        onChange={v => onWordpressTagsInputChange?.(v)}
+                        onChange={e => onWordpressTagsInputChange?.(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-[#E2E8F0] text-sm text-[#1A1A2E] focus:outline-none focus:ring-2 focus:ring-[#1A9FCC]/30 focus:border-[#1A9FCC] transition-all"
+                        placeholder="eラーニング、オンボーディング、管理職研修"
                       />
                     </div>
                   </div>

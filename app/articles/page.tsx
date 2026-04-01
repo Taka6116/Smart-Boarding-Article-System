@@ -43,6 +43,7 @@ export default function ArticlesPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [sortKey, setSortKey] = useState<SortKey>('dateDesc')
   const [visibleCount, setVisibleCount] = useState(ARTICLE_CARD_PAGE_SIZE)
+  const [confirmTargetId, setConfirmTargetId] = useState<string | null>(null)
 
   const reloadArticles = async () => {
     const all = await getAllArticles()
@@ -58,7 +59,6 @@ export default function ArticlesPage() {
   }, [articles, statusFilter, searchQuery, sortKey])
 
   const handleDelete = async (id: string) => {
-    if (!confirm('この記事を削除しますか？')) return
     await deleteArticle(id)
     await reloadArticles()
   }
@@ -379,7 +379,7 @@ export default function ArticlesPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleDelete(article.id)}
+                      onClick={() => setConfirmTargetId(article.id)}
                       className="p-2 rounded-lg hover:bg-[#FEF2F2] text-[#EF4444]"
                       aria-label="削除"
                     >
@@ -403,6 +403,44 @@ export default function ArticlesPage() {
           >
             さらに表示（あと {filteredAndSorted.length - visibleCount} 件）
           </button>
+        </div>
+      )}
+
+      {confirmTargetId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div
+            className="w-full max-w-md rounded-xl p-6 space-y-4"
+            style={{ background: 'white', boxShadow: '0 10px 25px rgba(15,23,42,0.18)' }}
+          >
+            <h2 className="text-base font-semibold" style={{ color: '#1A1A2E' }}>
+              この記事を削除しますか？
+            </h2>
+            <p className="text-sm" style={{ color: '#64748B' }}>
+              削除すると元に戻せません。
+            </p>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmTargetId(null)}
+                className="px-4 py-2 rounded-lg text-sm font-medium"
+                style={{ background: '#E2E8F0', color: '#1F2933' }}
+              >
+                キャンセル
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  await handleDelete(confirmTargetId)
+                  setConfirmTargetId(null)
+                }}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
+                style={{ background: '#DC2626', color: 'white' }}
+              >
+                <Trash2 size={14} />
+                削除する
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

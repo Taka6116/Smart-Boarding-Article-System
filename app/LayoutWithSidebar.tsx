@@ -31,7 +31,7 @@ export default function LayoutWithSidebar({
       >
         <div className="px-5 py-4 border-b" style={{ borderColor: '#2AA3D0' }}>
           <div className="text-[23px] font-bold tracking-wide">SBAS</div>
-          <div className="text-[14px] text-[#94A3B8] font-mono mt-0.5">
+          <div className="text-[14px] text-white font-mono mt-0.5">
             Smart Boarding Article System
           </div>
         </div>
