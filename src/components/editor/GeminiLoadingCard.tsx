@@ -79,8 +79,8 @@ export default function GeminiLoadingCard() {
             className="absolute inset-2 rounded-full"
             style={{
               border: '2px solid transparent',
-              borderTopColor: '#1B2A4A',
-              borderLeftColor: '#1B2A4A40',
+              borderTopColor: '#1A9FCC',
+              borderLeftColor: '#1A9FCC40',
               animation: 'spin 2s linear infinite reverse',
             }}
           />
@@ -116,7 +116,7 @@ export default function GeminiLoadingCard() {
               <div
                 className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 transition-all duration-300"
                 style={{
-                  background: isDone ? '#1B2A4A' : isActive ? '#FDF0EE' : '#F1F5F9',
+                  background: isDone ? '#1A9FCC' : isActive ? '#FDF0EE' : '#F1F5F9',
                   border: isActive ? '2px solid #C0392B' : 'none',
                 }}
               >
@@ -169,7 +169,7 @@ export default function GeminiLoadingCard() {
           <span className="text-xs" style={{ color: '#94A3B8', fontFamily: 'DM Mono' }}>
             処理中
           </span>
-          <span className="text-xs font-medium" style={{ color: '#1B2A4A', fontFamily: 'DM Mono' }}>
+          <span className="text-xs font-medium" style={{ color: '#1A9FCC', fontFamily: 'DM Mono' }}>
             {Math.round(progress)}%
           </span>
         </div>
@@ -181,7 +181,7 @@ export default function GeminiLoadingCard() {
             className="h-full rounded-full transition-all duration-300 ease-out"
             style={{
               width: `${progress}%`,
-              background: 'linear-gradient(90deg, #1B2A4A 0%, #C0392B 100%)',
+              background: 'linear-gradient(90deg, #1A9FCC 0%, #C0392B 100%)',
             }}
           />
         </div>

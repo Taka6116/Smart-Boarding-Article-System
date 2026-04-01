@@ -110,7 +110,7 @@ export default function KeywordsPage() {
                 value={editTitle}
                 onChange={e => setEditTitle(e.target.value)}
                 placeholder="例：事業承継コラム用"
-                className="w-full px-4 py-2.5 rounded-lg border border-[#E2E8F0] focus:ring-2 focus:ring-[#1B2A4A]/30 focus:border-[#1B2A4A] outline-none transition-all text-sm"
+                className="w-full px-4 py-2.5 rounded-lg border border-[#E2E8F0] focus:ring-2 focus:ring-[#1A9FCC]/30 focus:border-[#1A9FCC] outline-none transition-all text-sm"
               />
             </div>
             <div>
@@ -121,7 +121,7 @@ export default function KeywordsPage() {
                 value={editContent}
                 onChange={e => setEditContent(e.target.value)}
                 placeholder="例：事業承継 M&A, 中小企業 事業承継, 後継者不足, M&A 相談, デューデリジェンス, アドバイザー 選び方"
-                className="w-full px-4 py-3 rounded-lg border border-[#E2E8F0] focus:ring-2 focus:ring-[#1B2A4A]/30 focus:border-[#1B2A4A] outline-none transition-all text-sm resize-y min-h-[120px]"
+                className="w-full px-4 py-3 rounded-lg border border-[#E2E8F0] focus:ring-2 focus:ring-[#1A9FCC]/30 focus:border-[#1A9FCC] outline-none transition-all text-sm resize-y min-h-[120px]"
               />
             </div>
             <div className="flex justify-end gap-3 pt-2">
@@ -157,7 +157,7 @@ export default function KeywordsPage() {
                   <button
                     type="button"
                     onClick={() => handleEdit(k)}
-                    className="p-2 text-[#64748B] hover:text-[#1B2A4A] hover:bg-[#F1F5F9] rounded-lg transition-colors"
+                    className="p-2 text-[#64748B] hover:text-[#1A9FCC] hover:bg-[#F1F5F9] rounded-lg transition-colors"
                     title="編集"
                   >
                     <Pencil size={18} />

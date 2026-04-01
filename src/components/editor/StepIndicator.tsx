@@ -30,8 +30,8 @@ export default function StepIndicator({ currentStep, onStepClick }: StepIndicato
 
         const labelClasses = `
           text-xs font-medium whitespace-nowrap
-          ${isActive ? 'text-[#002C93] font-semibold' : ''}
-          ${isCompleted ? 'text-[#002C93]' : ''}
+          ${isActive ? 'text-[#33B5E5] font-semibold' : ''}
+          ${isCompleted ? 'text-[#33B5E5]' : ''}
           ${!isCompleted && !isActive ? 'text-[#64748B]' : ''}
         `
 
@@ -42,8 +42,8 @@ export default function StepIndicator({ currentStep, onStepClick }: StepIndicato
               <div
                 className={`
                   w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold
-                  ${isCompleted ? 'bg-[#002C93] text-white' : ''}
-                  ${isActive ? 'bg-[#002C93] text-white ring-4 ring-[#002C93]/20' : ''}
+                  ${isCompleted ? 'bg-[#33B5E5] text-white' : ''}
+                  ${isActive ? 'bg-[#33B5E5] text-white ring-4 ring-[#33B5E5]/20' : ''}
                   ${!isCompleted && !isActive ? 'bg-[#E2E8F0] text-[#64748B]' : ''}
                 `}
               >
@@ -65,7 +65,7 @@ export default function StepIndicator({ currentStep, onStepClick }: StepIndicato
                 <div
                   className={`
                     w-[2px] h-10
-                    ${isCompleted ? 'bg-[#002C93]' : 'bg-[#E2E8F0]'}
+                    ${isCompleted ? 'bg-[#33B5E5]' : 'bg-[#E2E8F0]'}
                   `}
                 />
               )}

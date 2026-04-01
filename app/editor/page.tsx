@@ -553,7 +553,7 @@ function EditorContent() {
           type="button"
           onClick={handleNewArticle}
           className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all"
-          style={{ background: '#1B2A4A', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}
+          style={{ background: '#1A9FCC', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}
         >
           <Plus size={16} />
           新規作成
@@ -629,7 +629,7 @@ function EditorContent() {
             <p className="text-sm font-medium text-[#1A1A2E] mb-5">{toastMessage}</p>
             <button
               onClick={() => setToastMessage(null)}
-              className="px-8 py-2 rounded-full bg-[#1B2A4A] text-white text-sm font-semibold hover:bg-[#162240] transition-colors"
+              className="px-8 py-2 rounded-full bg-[#1A9FCC] text-white text-sm font-semibold hover:bg-[#178AB5] transition-colors"
             >
               OK
             </button>

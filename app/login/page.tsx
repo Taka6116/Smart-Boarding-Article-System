@@ -44,11 +44,11 @@ export default function LoginPage() {
         className="rounded-2xl border shadow-lg p-8"
         style={{
           backgroundColor: '#fff',
-          borderColor: '#0039b3',
+          borderColor: '#2AA3D0',
         }}
       >
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold" style={{ color: '#002C93' }}>
+          <h1 className="text-2xl font-bold" style={{ color: '#33B5E5' }}>
             SBAS
           </h1>
           <p className="text-sm text-[#64748B] mt-1">Smart Boarding Article System</p>
@@ -68,7 +68,7 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              className="w-full px-4 py-2.5 rounded-lg border border-[#cbd5e1] bg-white text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#002C93]"
+              className="w-full px-4 py-2.5 rounded-lg border border-[#cbd5e1] bg-white text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#33B5E5]"
               placeholder="example@company.com"
             />
           </div>
@@ -83,7 +83,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete="current-password"
-              className="w-full px-4 py-2.5 rounded-lg border border-[#cbd5e1] bg-white text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#002C93]"
+              className="w-full px-4 py-2.5 rounded-lg border border-[#cbd5e1] bg-white text-[#0f172a] focus:outline-none focus:ring-2 focus:ring-[#33B5E5]"
               placeholder="••••••••"
             />
           </div>
@@ -94,7 +94,7 @@ export default function LoginPage() {
             type="submit"
             disabled={loading}
             className="w-full py-2.5 rounded-lg font-semibold text-white transition-colors disabled:opacity-50"
-            style={{ backgroundColor: '#002C93' }}
+            style={{ backgroundColor: '#33B5E5' }}
           >
             {loading ? '確認中...' : 'ログイン'}
           </button>

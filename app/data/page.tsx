@@ -134,7 +134,7 @@ export default function DataPage() {
       <div
         className={`
           relative rounded-xl border-2 border-dashed p-8 text-center transition-colors
-          ${dragOver ? 'border-[#002C93] bg-[#F0F4FF]' : 'border-[#E2E8F0] bg-white'}
+          ${dragOver ? 'border-[#33B5E5] bg-[#F0F4FF]' : 'border-[#E2E8F0] bg-white'}
         `}
         onDragOver={e => {
           e.preventDefault()
@@ -218,7 +218,7 @@ export default function DataPage() {
                           <a
                             href={f.downloadUrl ?? `/api/data/files/${encodeURIComponent(f.id)}/download`}
                             download={f.originalName}
-                            className="p-2 rounded-lg text-[#64748B] hover:bg-[#E2E8F0] hover:text-[#1B2A4A] transition-colors"
+                            className="p-2 rounded-lg text-[#64748B] hover:bg-[#E2E8F0] hover:text-[#1A9FCC] transition-colors"
                             title="ダウンロード"
                           >
                             <Download size={18} />

@@ -6,7 +6,7 @@ interface StepBadgeProps {
 
 export default function StepBadge({ step, label, status }: StepBadgeProps) {
   const containerStyles = {
-    completed: 'bg-[#1B2A4A] text-white',
+    completed: 'bg-[#1A9FCC] text-white',
     active: 'bg-[#C0392B] text-white',
     pending: 'bg-[#E2E8F0] text-[#64748B]',
   }

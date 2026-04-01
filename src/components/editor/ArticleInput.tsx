@@ -193,7 +193,7 @@ export default function ArticleInput({
                       <button
                         type="button"
                         onClick={() => setShowPromptDropdown(!showPromptDropdown)}
-                        className="text-xs text-[#002C93] font-medium hover:underline flex items-center gap-1"
+                        className="text-xs text-[#33B5E5] font-medium hover:underline flex items-center gap-1"
                       >
                         保存済みプロンプトから入力 <ChevronDown size={14} />
                       </button>
@@ -221,7 +221,7 @@ export default function ArticleInput({
                   className="
                     w-full px-4 py-3 rounded-lg border border-[#E2E8F0]
                     text-[#1A1A2E] placeholder-[#CBD5E1]
-                    focus:outline-none focus:ring-2 focus:ring-[#1B2A4A]/30 focus:border-[#1B2A4A]
+                    focus:outline-none focus:ring-2 focus:ring-[#1A9FCC]/30 focus:border-[#1A9FCC]
                     transition-all text-sm resize-y
                     min-h-[140px]
                   "
@@ -241,7 +241,7 @@ export default function ArticleInput({
                     <button
                       type="button"
                       onClick={() => setShowKeywordDropdown(!showKeywordDropdown)}
-                      className="text-xs text-[#002C93] font-medium hover:underline flex items-center gap-1 whitespace-nowrap"
+                      className="text-xs text-[#33B5E5] font-medium hover:underline flex items-center gap-1 whitespace-nowrap"
                     >
                       保存済みキーワードから入力 <ChevronDown size={14} />
                     </button>
@@ -252,7 +252,7 @@ export default function ArticleInput({
                             <p className="mb-3">キーワードライブラリに保存されたセットはまだありません。</p>
                             <Link
                               href="/keywords"
-                              className="font-medium text-[#002C93] hover:underline"
+                              className="font-medium text-[#33B5E5] hover:underline"
                               onClick={() => setShowKeywordDropdown(false)}
                             >
                               キーワードページで追加する
@@ -280,7 +280,7 @@ export default function ArticleInput({
                   value={article.targetKeyword ?? ''}
                   onChange={e => onTargetKeywordChange(e.target.value)}
                   placeholder="例：事業承継 M&A, 中小企業 事業承継, 後継者不足, M&A 相談, デューデリジェンス, アドバイザー 選び方"
-                  className="w-full px-4 py-3 rounded-lg text-sm border border-[#E2E8F0] text-[#1A1A2E] bg-[#FAFBFC] focus:outline-none focus:ring-2 focus:ring-[#1B2A4A]/30"
+                  className="w-full px-4 py-3 rounded-lg text-sm border border-[#E2E8F0] text-[#1A1A2E] bg-[#FAFBFC] focus:outline-none focus:ring-2 focus:ring-[#1A9FCC]/30"
                 />
               </div>
 
@@ -326,7 +326,7 @@ export default function ArticleInput({
                       className="
                         w-full px-4 py-2.5 rounded-lg border border-[#E2E8F0]
                         text-[#1A1A2E] placeholder-[#CBD5E1]
-                        focus:outline-none focus:ring-2 focus:ring-[#1B2A4A]/30 focus:border-[#1B2A4A]
+                        focus:outline-none focus:ring-2 focus:ring-[#1A9FCC]/30 focus:border-[#1A9FCC]
                         transition-all text-sm
                       "
                     />
@@ -342,7 +342,7 @@ export default function ArticleInput({
                       className="
                         w-full px-4 py-3 rounded-lg border border-[#E2E8F0]
                         text-[#1A1A2E] placeholder-[#CBD5E1]
-                        focus:outline-none focus:ring-2 focus:ring-[#1B2A4A]/30 focus:border-[#1B2A4A]
+                        focus:outline-none focus:ring-2 focus:ring-[#1A9FCC]/30 focus:border-[#1A9FCC]
                         transition-all text-sm resize-y
                         min-h-[320px]
                       "
@@ -487,7 +487,7 @@ function GeneratingLoader({ step }: { step: string }) {
             }}
           >
             <Sparkles
-              className={`w-5 h-5 text-[#1B2A4A] ${reduceMotion ? '' : 'motion-safe:opacity-90 motion-safe:animate-pulse'}`}
+              className={`w-5 h-5 text-[#1A9FCC] ${reduceMotion ? '' : 'motion-safe:opacity-90 motion-safe:animate-pulse'}`}
               aria-hidden
             />
           </div>
@@ -501,7 +501,7 @@ function GeneratingLoader({ step }: { step: string }) {
           </div>
           <div
             className="flex-shrink-0 text-2xl font-bold tabular-nums leading-none pt-0.5"
-            style={{ color: '#1B2A4A' }}
+            style={{ color: '#1A9FCC' }}
             role="progressbar"
             aria-valuenow={progress}
             aria-valuemin={0}
@@ -518,7 +518,7 @@ function GeneratingLoader({ step }: { step: string }) {
               className="h-full rounded-full transition-[width] duration-500 ease-out"
               style={{
                 width: `${progress}%`,
-                backgroundColor: '#1B2A4A',
+                backgroundColor: '#1A9FCC',
               }}
             />
           </div>
@@ -554,12 +554,12 @@ function GeneratingLoader({ step }: { step: string }) {
                     className={`flex-shrink-0 w-5 h-5 mt-0.5 rounded-full border-2 flex items-center justify-center bg-white ${
                       reduceMotion ? '' : 'animate-loader-ring'
                     }`}
-                    style={{ borderColor: '#1B2A4A' }}
+                    style={{ borderColor: '#1A9FCC' }}
                     aria-current="step"
                   >
                     <span
                       className={`w-2 h-2 rounded-full ${reduceMotion ? '' : 'animate-loader-dot-soft'}`}
-                      style={{ backgroundColor: '#1B2A4A' }}
+                      style={{ backgroundColor: '#1A9FCC' }}
                     />
                   </span>
                 )}
@@ -580,19 +580,19 @@ function GeneratingLoader({ step }: { step: string }) {
                     </span>
                     {state === 'active' && !reduceMotion && (
                       <span className="inline-flex gap-1 items-center" aria-hidden>
-                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#1B2A4A] animate-loader-dot-soft" />
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#1A9FCC] animate-loader-dot-soft" />
                         <span
-                          className="inline-block w-1.5 h-1.5 rounded-full bg-[#1B2A4A] animate-loader-dot-soft"
+                          className="inline-block w-1.5 h-1.5 rounded-full bg-[#1A9FCC] animate-loader-dot-soft"
                           style={{ animationDelay: '120ms' }}
                         />
                         <span
-                          className="inline-block w-1.5 h-1.5 rounded-full bg-[#1B2A4A] animate-loader-dot-soft"
+                          className="inline-block w-1.5 h-1.5 rounded-full bg-[#1A9FCC] animate-loader-dot-soft"
                           style={{ animationDelay: '240ms' }}
                         />
                       </span>
                     )}
                     {state === 'active' && reduceMotion && (
-                      <span className="text-xs font-semibold text-[#1B2A4A]" aria-hidden>
+                      <span className="text-xs font-semibold text-[#1A9FCC]" aria-hidden>
                         …
                       </span>
                     )}
@@ -617,7 +617,7 @@ function GeneratingLoader({ step }: { step: string }) {
               You
             </div>
             <div
-              className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-bold text-[#1B2A4A]"
+              className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-bold text-[#1A9FCC]"
               style={{ background: '#EEF2FF' }}
             >
               AI

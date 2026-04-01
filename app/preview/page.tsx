@@ -70,7 +70,7 @@ function formatContent(content: string, imageUrl: string): string {
 
   const supervisorBlock = getSupervisorBlockHtml(SUPERVISOR_FACE_IMAGE_URL)
 
-  const H2_STYLE = "font-size:22px;font-weight:900;margin:48px 0 16px;padding-bottom:8px;border-bottom:3px solid #0e357f;font-family:'Noto Sans JP',sans-serif;"
+  const H2_STYLE = "font-size:22px;font-weight:900;margin:48px 0 16px;padding-bottom:8px;border-bottom:3px solid #33B5E5;font-family:'Noto Sans JP',sans-serif;"
   const H3_STYLE = 'font-size:18px;font-weight:400;margin:32px 0 12px;color:#111;'
   const P_STYLE = 'margin-bottom:1.6em;'
 
@@ -129,19 +129,19 @@ function formatContent(content: string, imageUrl: string): string {
   bodyHtml = bodyHtml
     .replace(
       /導入事例・事例集はこちらから\s+https?:\/\/www\.smartboarding\.net\/documents\/1978\/?/g,
-      '<a href="https://www.smartboarding.net/documents/1978/" target="_blank" rel="noopener noreferrer" style="color:#0e357f;text-decoration:underline;">導入事例・事例集はこちらから</a>'
+      '<a href="https://www.smartboarding.net/documents/1978/" target="_blank" rel="noopener noreferrer" style="color:#33B5E5;text-decoration:underline;">導入事例・事例集はこちらから</a>'
     )
     .replace(
       /14日間無料トライアルはこちら\s+https?:\/\/www\.smartboarding\.net\/trial\/?/g,
-      '<a href="https://www.smartboarding.net/trial/" target="_blank" rel="noopener noreferrer" style="color:#0e357f;text-decoration:underline;">14日間無料トライアルはこちら</a>'
+      '<a href="https://www.smartboarding.net/trial/" target="_blank" rel="noopener noreferrer" style="color:#33B5E5;text-decoration:underline;">14日間無料トライアルはこちら</a>'
     )
     .replace(
       /導入事例はこちらから\s+https?:\/\/nihon-teikei\.co\.jp\/news\/casestudy\/?/g,
-      '<a href="https://www.smartboarding.net/documents/1978/" target="_blank" rel="noopener noreferrer" style="color:#0e357f;text-decoration:underline;">導入事例はこちらから</a>'
+      '<a href="https://www.smartboarding.net/documents/1978/" target="_blank" rel="noopener noreferrer" style="color:#33B5E5;text-decoration:underline;">導入事例はこちらから</a>'
     )
     .replace(
       /待っているだけでオファーが届くM&Aオファーはこちら\s+https?:\/\/nihon-teikei\.com\/ma-offer/g,
-      '<a href="https://www.smartboarding.net/trial/" target="_blank" rel="noopener noreferrer" style="color:#0e357f;text-decoration:underline;">14日間無料トライアルはこちら</a>'
+      '<a href="https://www.smartboarding.net/trial/" target="_blank" rel="noopener noreferrer" style="color:#33B5E5;text-decoration:underline;">14日間無料トライアルはこちら</a>'
     )
 
   bodyHtml = insertCtaBannersForPreview(bodyHtml)
@@ -403,16 +403,16 @@ function PreviewContent() {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
-                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" stroke="#0e357f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" stroke="#33B5E5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
               </svg>
-              <span style={{ fontSize: 14, fontWeight: 700, color: '#0e357f' }}>03-5908-1400</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#33B5E5' }}>03-5908-1400</span>
             </div>
             <span style={{ fontSize: 11, color: '#666', marginTop: 2 }}>電話相談受付:10:00-20:00(年中無休)</span>
           </div>
           <button
             type="button"
             style={{
-              backgroundColor: '#0e357f',
+              backgroundColor: '#33B5E5',
               color: 'white',
               padding: '10px 20px',
               borderRadius: 6,
@@ -489,9 +489,9 @@ function PreviewContent() {
             style={{ marginTop: 16, fontSize: 13, color: '#666' }}
             aria-label="パンくず"
           >
-            <span style={{ color: '#0e357f', cursor: 'pointer' }}>TOP</span>
+            <span style={{ color: '#33B5E5', cursor: 'pointer' }}>TOP</span>
             {' > '}
-            <span style={{ color: '#0e357f', cursor: 'pointer' }}>ニュース</span>
+            <span style={{ color: '#33B5E5', cursor: 'pointer' }}>ニュース</span>
             {' > '}
             <span>
               {title.length > 40 ? `${title.slice(0, 40)}...` : title}
@@ -737,7 +737,7 @@ function PreviewContent() {
                     style={{
                       fontSize: 10,
                       fontWeight: 600,
-                      color: '#0e357f',
+                      color: '#33B5E5',
                       letterSpacing: '0.08em',
                     }}
                   >
@@ -771,7 +771,7 @@ function PreviewContent() {
           <div style={{ textAlign: 'right', marginTop: 24 }}>
             <span
               style={{
-                color: '#0e357f',
+                color: '#33B5E5',
                 fontWeight: 700,
                 cursor: 'pointer',
               }}
@@ -785,7 +785,7 @@ function PreviewContent() {
       {/* ⑦ CONTACTセクション */}
       <aside
         style={{
-          backgroundColor: '#0e357f',
+          backgroundColor: '#33B5E5',
           color: 'white',
           padding: '80px 0',
           textAlign: 'center',

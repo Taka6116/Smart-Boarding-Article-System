@@ -319,7 +319,7 @@ export default function SchedulePage() {
           style={{ borderBottom: '1px solid #F1F5F9' }}
         >
           <div className="flex items-center gap-2">
-            <List size={18} style={{ color: '#1B2A4A' }} />
+            <List size={18} style={{ color: '#1A9FCC' }} />
             <h2 className="text-sm font-bold" style={{ color: '#1A1A2E' }}>
               予定一覧（これから投稿する予定・日時が未来の記事）
             </h2>
@@ -425,7 +425,7 @@ export default function SchedulePage() {
                             setMonth(parseInt(article.scheduledDate!.slice(5, 7), 10) - 1)
                           }}
                           className="text-xs font-semibold px-2 py-1 rounded-lg"
-                          style={{ color: '#1B2A4A', background: '#F0F4FF', border: '1px solid #C7D7FF' }}
+                          style={{ color: '#1A9FCC', background: '#F0F4FF', border: '1px solid #C7D7FF' }}
                         >
                           カレンダーで表示
                         </button>
@@ -493,7 +493,7 @@ export default function SchedulePage() {
                   onClick={() => setSelectedDate(dateStr)}
                   className="flex flex-col items-center justify-center rounded-xl py-1.5 transition-all"
                   style={{
-                    background: isSelected ? '#1B2A4A' : isToday ? '#FDF0EE' : 'transparent',
+                    background: isSelected ? '#1A9FCC' : isToday ? '#FDF0EE' : 'transparent',
                     border: isToday && !isSelected ? '1.5px solid #C0392B' : '1.5px solid transparent',
                   }}
                 >
@@ -550,7 +550,7 @@ export default function SchedulePage() {
             className="rounded-xl px-5 py-3 mb-4 flex items-center gap-3"
             style={{ background: '#F8FAFC', border: '1px solid #E2E8F0' }}
           >
-            <CalendarDays size={16} style={{ color: '#1B2A4A' }} />
+            <CalendarDays size={16} style={{ color: '#1A9FCC' }} />
             <span className="font-semibold text-sm" style={{ color: '#1A1A2E' }}>
               {new Date(selectedDate + 'T00:00:00').toLocaleDateString('ja-JP', {
                 year: 'numeric',
@@ -581,7 +581,7 @@ export default function SchedulePage() {
               <button
                 onClick={() => router.push('/articles')}
                 className="mt-1 px-5 py-2 rounded-lg text-xs font-semibold text-white"
-                style={{ background: '#1B2A4A' }}
+                style={{ background: '#1A9FCC' }}
               >
                 記事一覧へ
               </button>
@@ -655,7 +655,7 @@ export default function SchedulePage() {
                           <span
                             className="text-xs px-2 py-0.5 rounded-full"
                             style={{
-                              color: '#1B2A4A',
+                              color: '#1A9FCC',
                               background: '#F0F4FF',
                               border: '1px solid #C7D7FF',
                               fontFamily: 'DM Mono',
@@ -800,7 +800,7 @@ export default function SchedulePage() {
                           onClick={() => handleScheduledPublish(article)}
                           disabled={publishingId === article.id}
                           className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white disabled:opacity-60"
-                          style={{ background: '#1B2A4A', boxShadow: '0 2px 6px rgba(27,42,74,0.2)' }}
+                          style={{ background: '#1A9FCC', boxShadow: '0 2px 6px rgba(27,42,74,0.2)' }}
                         >
                           {publishingId === article.id ? (
                             <>
@@ -869,7 +869,7 @@ export default function SchedulePage() {
                             handleScheduleChange(article.id, selectedDate)
                           }}
                           className="text-xs px-3 py-1 rounded-lg font-medium"
-                          style={{ background: '#F0F4FF', color: '#1B2A4A', border: '1px solid #C7D7FF' }}
+                          style={{ background: '#F0F4FF', color: '#1A9FCC', border: '1px solid #C7D7FF' }}
                         >
                           {new Date(selectedDate + 'T00:00:00').toLocaleDateString('ja-JP', {
                             month: 'short',

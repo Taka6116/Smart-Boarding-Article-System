@@ -126,7 +126,7 @@
                     className="
                       w-full px-4 py-2 rounded-lg border border-[#E2E8F0]
                       bg-[#F1F5F9] text-[#64748B] text-sm placeholder-[#CBD5E1]
-                      focus:outline-none focus:ring-2 focus:ring-[#1B2A4A]/30 focus:border-[#1B2A4A]
+                      focus:outline-none focus:ring-2 focus:ring-[#1A9FCC]/30 focus:border-[#1A9FCC]
                       transition-all
                     "
                   />
@@ -158,8 +158,8 @@
                      onClick={handleCopy}
                      className="
                        inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold
-                       border border-[#E2E8F0] text-[#1B2A4A]
-                       hover:bg-[#1B2A4A] hover:text-white hover:border-[#1B2A4A]
+                       border border-[#E2E8F0] text-[#1A9FCC]
+                       hover:bg-[#1A9FCC] hover:text-white hover:border-[#1A9FCC]
                        transition-colors
                      "
                    >
@@ -188,7 +188,7 @@
                      className="
                        w-full px-4 py-2 rounded-lg border border-[#E2E8F0]
                        text-[#1A1A2E] placeholder-[#CBD5E1] text-sm
-                       focus:outline-none focus:ring-2 focus:ring-[#1B2A4A]/30 focus:border-[#1B2A4A]
+                       focus:outline-none focus:ring-2 focus:ring-[#1A9FCC]/30 focus:border-[#1A9FCC]
                        transition-all
                      "
                    />
@@ -200,7 +200,7 @@
                      flex-1 px-5 py-4
                      bg-white text-[#1A1A2E] text-sm resize-none
                      min-h-[560px] max-h-[72vh]
-                     focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#1B2A4A]/20
+                     focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#1A9FCC]/20
                      transition-all
                    "
                  />

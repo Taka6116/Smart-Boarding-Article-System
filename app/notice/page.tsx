@@ -21,7 +21,7 @@ export default function NoticePage() {
           の利用を推奨します。
           <Link
             href="/prompts"
-            className="ml-1 text-[#0e357f] font-semibold underline underline-offset-2 hover:opacity-80"
+            className="ml-1 text-[#33B5E5] font-semibold underline underline-offset-2 hover:opacity-80"
           >
             プロンプトライブラリ
           </Link>
@@ -35,10 +35,10 @@ export default function NoticePage() {
       </div>
 
       <div
-        className="rounded-xl border border-[#0e357f]/20 bg-[#f8fafc] p-6 sm:p-8 shadow-sm mb-8"
+        className="rounded-xl border border-[#33B5E5]/20 bg-[#f8fafc] p-6 sm:p-8 shadow-sm mb-8"
         style={{ boxShadow: '0 1px 3px rgba(15, 23, 42, 0.06)' }}
       >
-        <h2 className="text-lg font-bold text-[#0e357f] border-b-2 border-[#0e357f] pb-2 mb-4">
+        <h2 className="text-lg font-bold text-[#33B5E5] border-b-2 border-[#33B5E5] pb-2 mb-4">
           ■ ターゲットキーワード（必須・構造化データ）
         </h2>
         <p className="text-sm text-[#334155] leading-relaxed mb-4">
@@ -46,7 +46,7 @@ export default function NoticePage() {
         </p>
         <p className="text-sm text-[#334155] leading-relaxed mb-4">
           入力内容は、WordPress 投稿に含まれる構造化データ（JSON-LD）の{' '}
-          <code className="rounded bg-white px-1.5 py-0.5 text-xs font-mono text-[#0e357f] border border-slate-200">
+          <code className="rounded bg-white px-1.5 py-0.5 text-xs font-mono text-[#33B5E5] border border-slate-200">
             keywords
           </code>{' '}
           に反映されます。コード（裏側）の記述例は次の通りです。

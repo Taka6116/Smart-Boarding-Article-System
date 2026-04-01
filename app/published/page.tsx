@@ -277,7 +277,7 @@ export default function PublishedArticlesPage() {
                   <span
                     className="text-[10px] px-2 py-0.5 rounded-full mb-2 w-fit"
                     style={{
-                      color: '#1B2A4A',
+                      color: '#1A9FCC',
                       background: '#F0F4FF',
                       border: '1px solid #C7D7FF',
                     }}
@@ -317,7 +317,7 @@ export default function PublishedArticlesPage() {
                   <button
                     type="button"
                     onClick={() => void handlePreview(article)}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1B2A4A] hover:underline py-2"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1A9FCC] hover:underline py-2"
                   >
                     <Eye size={14} />
                     プレビュー
@@ -328,7 +328,7 @@ export default function PublishedArticlesPage() {
                         href={article.wordpressUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-2 rounded-lg hover:bg-[#F0F4FF] text-[#1B2A4A]"
+                        className="p-2 rounded-lg hover:bg-[#F0F4FF] text-[#1A9FCC]"
                         aria-label="WordPressで開く"
                       >
                         <ExternalLink size={16} />
@@ -337,7 +337,7 @@ export default function PublishedArticlesPage() {
                     <button
                       type="button"
                       onClick={() => void handleDuplicateToSaved(article)}
-                      className="p-2 rounded-lg hover:bg-[#F0F4FF] text-[#1B2A4A]"
+                      className="p-2 rounded-lg hover:bg-[#F0F4FF] text-[#1A9FCC]"
                       aria-label={copiedId === article.id ? '複製しました' : '保存済みに複製'}
                       title={copiedId === article.id ? '複製しました' : '保存済みに複製'}
                     >

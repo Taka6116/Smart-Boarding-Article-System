@@ -28,7 +28,7 @@ const config: Config = {
       },
       colors: {
         nts: {
-          navy: "#1B2A4A",
+          navy: "#1A9FCC",
           red: "#C0392B",
           "light-navy": "#2C3E6B",
         },

@@ -171,7 +171,7 @@ export default function PublishResult({
                 target="_blank"
                 rel="noopener noreferrer"
                 className="
-                  flex items-center gap-2 text-sm text-[#1B2A4A] font-medium
+                  flex items-center gap-2 text-sm text-[#1A9FCC] font-medium
                   hover:underline underline-offset-2
                 "
               >
@@ -223,7 +223,7 @@ export default function PublishResult({
                         className="
                           w-full px-4 py-2.5 rounded-lg border border-[#E2E8F0]
                           text-sm font-semibold text-[#1A1A2E]
-                          focus:outline-none focus:ring-2 focus:ring-[#1B2A4A]/30 focus:border-[#1B2A4A]
+                          focus:outline-none focus:ring-2 focus:ring-[#1A9FCC]/30 focus:border-[#1A9FCC]
                           transition-all
                         "
                         placeholder="記事タイトル"
@@ -248,7 +248,7 @@ export default function PublishResult({
                             onSlugChange(autoFullSlug)
                           }
                         }}
-                        className="w-full mb-2 px-3 py-2 rounded-lg border border-[#E2E8F0] text-sm text-[#1A1A2E] bg-white focus:outline-none focus:ring-2 focus:ring-[#1B2A4A]/30 focus:border-[#1B2A4A]"
+                        className="w-full mb-2 px-3 py-2 rounded-lg border border-[#E2E8F0] text-sm text-[#1A1A2E] bg-white focus:outline-none focus:ring-2 focus:ring-[#1A9FCC]/30 focus:border-[#1A9FCC]"
                         aria-label="スラッグの決め方"
                       >
                         <option value="auto">
@@ -261,7 +261,7 @@ export default function PublishResult({
                           {autoFullSlug}
                         </div>
                       ) : (
-                        <div className="flex w-full items-stretch rounded-lg border border-[#E2E8F0] bg-white overflow-hidden focus-within:ring-2 focus-within:ring-[#1B2A4A]/30 focus-within:border-[#1B2A4A] transition-all">
+                        <div className="flex w-full items-stretch rounded-lg border border-[#E2E8F0] bg-white overflow-hidden focus-within:ring-2 focus-within:ring-[#1A9FCC]/30 focus-within:border-[#1A9FCC] transition-all">
                           <span
                             className="flex items-center px-3 py-2.5 text-sm font-mono text-[#64748B] bg-[#F1F5F9] border-r border-[#E2E8F0] flex-shrink-0 select-none"
                             aria-hidden
@@ -303,7 +303,7 @@ export default function PublishResult({
                           w-full rounded-lg border border-[#E2E8F0] bg-white p-3
                           text-sm text-[#1A1A2E] leading-relaxed resize-y
                           min-h-[200px] max-h-[400px]
-                          focus:outline-none focus:ring-2 focus:ring-[#1B2A4A]/30 focus:border-[#1B2A4A]
+                          focus:outline-none focus:ring-2 focus:ring-[#1A9FCC]/30 focus:border-[#1A9FCC]
                           transition-all
                         "
                         placeholder="記事本文"
@@ -357,7 +357,7 @@ export default function PublishResult({
           {wordpressStatus === 'loading' ? (
             <div className="flex items-center justify-center gap-3 py-3 px-4 rounded-lg bg-white border border-[#E2E8F0]">
               <svg
-                className="animate-spin h-5 w-5 text-[#1B2A4A]"
+                className="animate-spin h-5 w-5 text-[#1A9FCC]"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -376,7 +376,7 @@ export default function PublishResult({
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                 />
               </svg>
-              <span className="text-sm text-[#1B2A4A] font-medium">
+              <span className="text-sm text-[#1A9FCC] font-medium">
                 WordPress APIに送信中...
               </span>
             </div>
@@ -398,7 +398,7 @@ export default function PublishResult({
                 <button
                   onClick={onSaveDraft}
                   className="flex items-center gap-2 px-5 py-3 rounded-lg text-sm font-medium"
-                  style={{ background: '#F0F4FF', border: '1.5px solid #C7D7FF', color: '#1B2A4A' }}
+                  style={{ background: '#F0F4FF', border: '1.5px solid #C7D7FF', color: '#1A9FCC' }}
                 >
                   💾 下書きに保存
                 </button>
@@ -461,7 +461,7 @@ export default function PublishResult({
               <Button
                 variant="ghost"
                 size="lg"
-                className="justify-center w-full !border-[#C7D7FF] !text-[#1B2A4A] bg-[#F0F4FF]"
+                className="justify-center w-full !border-[#C7D7FF] !text-[#1A9FCC] bg-[#F0F4FF]"
                 onClick={() => {
                   setWpChoiceOpen(false)
                   const init = getDefaultFutureScheduleInputs()

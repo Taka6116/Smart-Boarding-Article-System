@@ -166,7 +166,7 @@ export default function ArticlesPage() {
             type="button"
             onClick={() => router.push('/editor')}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white shadow-sm"
-            style={{ background: '#1B2A4A', boxShadow: '0 2px 8px rgba(27,42,74,0.2)' }}
+            style={{ background: '#1A9FCC', boxShadow: '0 2px 8px rgba(27,42,74,0.2)' }}
           >
             <Plus size={16} />
             新規作成
@@ -234,7 +234,7 @@ export default function ArticlesPage() {
             type="button"
             onClick={() => router.push('/editor')}
             className="mt-2 px-6 py-2.5 rounded-lg text-sm font-semibold text-white"
-            style={{ background: '#1B2A4A' }}
+            style={{ background: '#1A9FCC' }}
           >
             最初の記事を作成する
           </button>
@@ -324,7 +324,7 @@ export default function ArticlesPage() {
                   <span
                     className="text-[10px] px-2 py-0.5 rounded-full mb-3 w-fit"
                     style={{
-                      color: '#1B2A4A',
+                      color: '#1A9FCC',
                       background: '#F0F4FF',
                       border: '1px solid #C7D7FF',
                     }}
@@ -351,7 +351,7 @@ export default function ArticlesPage() {
                   <button
                     type="button"
                     onClick={() => void handlePreview(article)}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1B2A4A] hover:underline py-2"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1A9FCC] hover:underline py-2"
                   >
                     <Eye size={14} />
                     プレビュー
@@ -362,7 +362,7 @@ export default function ArticlesPage() {
                         href={article.wordpressUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-2 rounded-lg hover:bg-[#F0F4FF] text-[#1B2A4A]"
+                        className="p-2 rounded-lg hover:bg-[#F0F4FF] text-[#1A9FCC]"
                         aria-label="WordPressで開く"
                       >
                         <ExternalLink size={16} />
@@ -371,7 +371,7 @@ export default function ArticlesPage() {
                     <button
                       type="button"
                       onClick={() => handlePublish(article)}
-                      className="p-2 rounded-lg hover:bg-[#F0F4FF] text-[#1B2A4A]"
+                      className="p-2 rounded-lg hover:bg-[#F0F4FF] text-[#1A9FCC]"
                       aria-label="修正する"
                       title="修正する"
                     >

@@ -4,10 +4,10 @@
 
 :root {
   /* クライアントHPブランドカラー */
-  --color-client: #002C93;
-  --color-client-hover: #0039b3;
-  --color-client-border: #0039b3;
-  --color-navy: #1B2A4A;
+  --color-client: #33B5E5;
+  --color-client-hover: #2AA3D0;
+  --color-client-border: #2AA3D0;
+  --color-navy: #1A9FCC;
   --color-red: #C0392B;
   --color-light-navy: #2C3E6B;
   --color-page-bg: #F5F7FA;

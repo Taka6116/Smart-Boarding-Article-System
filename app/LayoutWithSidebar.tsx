@@ -27,9 +27,9 @@ export default function LayoutWithSidebar({
           fixed top-0 left-0 h-screen w-[220px] flex-shrink-0 z-40
           text-white border-r flex flex-col
         "
-        style={{ backgroundColor: '#002C93', borderColor: '#0039b3' }}
+        style={{ backgroundColor: '#33B5E5', borderColor: '#2AA3D0' }}
       >
-        <div className="px-5 py-4 border-b" style={{ borderColor: '#0039b3' }}>
+        <div className="px-5 py-4 border-b" style={{ borderColor: '#2AA3D0' }}>
           <div className="text-[23px] font-bold tracking-wide">SBAS</div>
           <div className="text-[14px] text-[#94A3B8] font-mono mt-0.5">
             Smart Boarding Article System
@@ -56,7 +56,7 @@ export default function LayoutWithSidebar({
                     className="flex items-center px-3 py-2.5 rounded-lg text-[16px] font-semibold transition-all"
                     style={{
                       color: isActive ? '#FFFFFF' : '#E2E8F0',
-                      background: isActive ? '#0039b3' : 'transparent',
+                      background: isActive ? '#2AA3D0' : 'transparent',
                       boxShadow: isActive ? 'inset 3px 0 0 #60A5FA' : 'none',
                     }}
                   >
@@ -68,7 +68,7 @@ export default function LayoutWithSidebar({
           </div>
         </nav>
 
-        <div className="px-5 py-3 text-[10px] text-[#94A3B8] border-t" style={{ borderColor: '#0039b3' }}>
+        <div className="px-5 py-3 text-[10px] text-[#94A3B8] border-t" style={{ borderColor: '#2AA3D0' }}>
           <p>© 株式会社FCE</p>
         </div>
       </aside>

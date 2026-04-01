@@ -178,7 +178,7 @@ export default function ImageResult({
                   type="button"
                   onClick={onSaveDraft}
                   className="flex items-center gap-2 px-5 py-3 rounded-lg text-sm font-medium flex-shrink-0"
-                  style={{ background: '#F0F4FF', border: '1.5px solid #C7D7FF', color: '#1B2A4A' }}
+                  style={{ background: '#F0F4FF', border: '1.5px solid #C7D7FF', color: '#1A9FCC' }}
                 >
                   💾 下書きに保存
                 </button>
@@ -228,7 +228,7 @@ function ImageGenerationLoader() {
       >
         <div className="relative w-[100px] h-[100px] mb-6 flex items-center justify-center">
           <svg
-            className="absolute inset-0 w-[100px] h-[100px] text-[#1B2A4A] motion-reduce:animate-none animate-[spin_1.35s_linear_infinite]"
+            className="absolute inset-0 w-[100px] h-[100px] text-[#1A9FCC] motion-reduce:animate-none animate-[spin_1.35s_linear_infinite]"
             viewBox="0 0 100 100"
             fill="none"
             aria-hidden
@@ -253,7 +253,7 @@ function ImageGenerationLoader() {
               transform="rotate(-90 50 50)"
             />
           </svg>
-          <Sparkles className="relative w-9 h-9 text-[#1B2A4A]" strokeWidth={1.75} aria-hidden />
+          <Sparkles className="relative w-9 h-9 text-[#1A9FCC]" strokeWidth={1.75} aria-hidden />
         </div>
 
         <h2 className="text-lg sm:text-xl font-bold text-[#1A1A2E] leading-snug tracking-tight">
@@ -263,7 +263,7 @@ function ImageGenerationLoader() {
           AIが文脈に合わせたビジュアルを生成しています
         </p>
         <p className="mt-5 flex items-center justify-center gap-2 text-xs sm:text-sm text-[#64748B]">
-          <Clock className="w-4 h-4 flex-shrink-0 text-[#1B2A4A]/70" aria-hidden />
+          <Clock className="w-4 h-4 flex-shrink-0 text-[#1A9FCC]/70" aria-hidden />
           <span>約30秒〜1分で完了することが多いです</span>
         </p>
       </div>

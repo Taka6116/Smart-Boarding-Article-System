@@ -226,13 +226,13 @@ export default function WordPressTagsField({ value, onChange }: WordPressTagsFie
           selected.map(name => (
             <span
               key={name}
-              className="inline-flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-full bg-[#EEF2FF] text-[#1B2A4A] text-xs font-medium border border-indigo-100"
+              className="inline-flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-full bg-[#EEF2FF] text-[#1A9FCC] text-xs font-medium border border-indigo-100"
             >
               {name}
               <button
                 type="button"
                 onClick={() => removeTag(name)}
-                className="p-0.5 rounded-full hover:bg-indigo-200/60 text-[#1B2A4A] focus:outline-none focus:ring-2 focus:ring-[#1B2A4A]/30"
+                className="p-0.5 rounded-full hover:bg-indigo-200/60 text-[#1A9FCC] focus:outline-none focus:ring-2 focus:ring-[#1A9FCC]/30"
                 aria-label={`「${name}」を外す`}
               >
                 <X size={14} strokeWidth={2.5} />
@@ -248,7 +248,7 @@ export default function WordPressTagsField({ value, onChange }: WordPressTagsFie
           value={filter}
           onChange={e => setFilter(e.target.value)}
           placeholder="候補を絞り込み…"
-          className="flex-1 px-3 py-2 rounded-lg border border-[#E2E8F0] text-sm text-[#1A1A2E] focus:outline-none focus:ring-2 focus:ring-[#1B2A4A]/30 focus:border-[#1B2A4A]"
+          className="flex-1 px-3 py-2 rounded-lg border border-[#E2E8F0] text-sm text-[#1A1A2E] focus:outline-none focus:ring-2 focus:ring-[#1A9FCC]/30 focus:border-[#1A9FCC]"
           aria-label="タグ候補の検索"
         />
         <button
@@ -301,7 +301,7 @@ export default function WordPressTagsField({ value, onChange }: WordPressTagsFie
                             type="checkbox"
                             checked={checked}
                             onChange={() => toggleTag(name)}
-                            className="rounded border-[#CBD5E1] text-[#1B2A4A] focus:ring-[#1B2A4A]/30 flex-shrink-0"
+                            className="rounded border-[#CBD5E1] text-[#1A9FCC] focus:ring-[#1A9FCC]/30 flex-shrink-0"
                             aria-label={`「${name}」を選択`}
                           />
                           <button
@@ -330,7 +330,7 @@ export default function WordPressTagsField({ value, onChange }: WordPressTagsFie
                     aria-expanded={historyExpanded}
                     id="tag-history-expand"
                     onClick={() => setHistoryExpanded(e => !e)}
-                    className="mt-1.5 ml-2 flex items-center gap-1 text-xs font-semibold text-[#1B2A4A] hover:underline"
+                    className="mt-1.5 ml-2 flex items-center gap-1 text-xs font-semibold text-[#1A9FCC] hover:underline"
                   >
                     {historyExpanded ? (
                       <>
@@ -374,7 +374,7 @@ export default function WordPressTagsField({ value, onChange }: WordPressTagsFie
                               type="checkbox"
                               checked={checked}
                               onChange={() => toggleTag(name)}
-                              className="rounded border-[#CBD5E1] text-[#1B2A4A] focus:ring-[#1B2A4A]/30 flex-shrink-0"
+                              className="rounded border-[#CBD5E1] text-[#1A9FCC] focus:ring-[#1A9FCC]/30 flex-shrink-0"
                               aria-label={`「${name}」を選択`}
                             />
                             <button
@@ -408,7 +408,7 @@ export default function WordPressTagsField({ value, onChange }: WordPressTagsFie
                       aria-expanded={wpListExpanded}
                       id="tag-wp-expand"
                       onClick={() => setWpListExpanded(e => !e)}
-                      className="mt-1.5 ml-2 flex items-center gap-1 text-xs font-semibold text-[#1B2A4A] hover:underline"
+                      className="mt-1.5 ml-2 flex items-center gap-1 text-xs font-semibold text-[#1A9FCC] hover:underline"
                     >
                       {wpListExpanded ? (
                         <>
@@ -434,7 +434,7 @@ export default function WordPressTagsField({ value, onChange }: WordPressTagsFie
               type="button"
               aria-expanded={hiddenPanelOpen}
               onClick={() => setHiddenPanelOpen(v => !v)}
-              className="flex w-full items-center gap-1 text-xs font-semibold text-[#64748B] hover:text-[#1B2A4A]"
+              className="flex w-full items-center gap-1 text-xs font-semibold text-[#64748B] hover:text-[#1A9FCC]"
             >
               {hiddenPanelOpen ? <ChevronUp size={14} aria-hidden /> : <ChevronDown size={14} aria-hidden />}
               一覧から隠したタグ（{hiddenList.length}）{hiddenPanelOpen ? 'を閉じる' : 'を表示'}
@@ -450,7 +450,7 @@ export default function WordPressTagsField({ value, onChange }: WordPressTagsFie
                     <button
                       type="button"
                       onClick={() => restoreHiddenTag(name)}
-                      className="flex-shrink-0 px-2 py-0.5 rounded border border-[#CBD5E1] text-[#1B2A4A] hover:bg-[#F1F5F9] font-semibold"
+                      className="flex-shrink-0 px-2 py-0.5 rounded border border-[#CBD5E1] text-[#1A9FCC] hover:bg-[#F1F5F9] font-semibold"
                     >
                       候補に戻す
                     </button>
@@ -477,12 +477,12 @@ export default function WordPressTagsField({ value, onChange }: WordPressTagsFie
             }}
             placeholder="例: DD（デューデリジェンス）、売却"
             autoComplete="off"
-            className="flex-1 px-4 py-2.5 rounded-lg border border-[#E2E8F0] text-sm text-[#1A1A2E] focus:outline-none focus:ring-2 focus:ring-[#1B2A4A]/30 focus:border-[#1B2A4A]"
+            className="flex-1 px-4 py-2.5 rounded-lg border border-[#E2E8F0] text-sm text-[#1A1A2E] focus:outline-none focus:ring-2 focus:ring-[#1A9FCC]/30 focus:border-[#1A9FCC]"
           />
           <button
             type="button"
             onClick={addFreeText}
-            className="px-4 py-2.5 rounded-lg bg-[#1B2A4A] text-white text-sm font-semibold hover:bg-[#162240] transition-colors sm:flex-shrink-0"
+            className="px-4 py-2.5 rounded-lg bg-[#1A9FCC] text-white text-sm font-semibold hover:bg-[#178AB5] transition-colors sm:flex-shrink-0"
           >
             追加
           </button>

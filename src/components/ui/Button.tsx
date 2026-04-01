@@ -15,9 +15,9 @@ const variantStyles: Record<ButtonVariant, string> = {
   primary:
     'bg-[#C0392B] text-white hover:bg-[#a93226] border border-[#C0392B] hover:border-[#a93226]',
   ghost:
-    'bg-transparent text-[#1B2A4A] border border-[#E2E8F0] hover:bg-[#F5F7FA] hover:border-[#1B2A4A]',
+    'bg-transparent text-[#1A9FCC] border border-[#E2E8F0] hover:bg-[#F5F7FA] hover:border-[#1A9FCC]',
   navy:
-    'bg-[#1B2A4A] text-white hover:bg-[#2C3E6B] border border-[#1B2A4A] hover:border-[#2C3E6B]',
+    'bg-[#1A9FCC] text-white hover:bg-[#178AB5] border border-[#1A9FCC] hover:border-[#178AB5]',
 }
 
 const sizeStyles = {
