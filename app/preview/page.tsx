@@ -297,25 +297,6 @@ function PreviewContent() {
                 dangerouslySetInnerHTML={{ __html: formattedContent }}
               />
 
-              {/* ───── 著者ブロック ───── */}
-              <div style={{ marginTop: 48, borderTop: '1px solid #e5e5e5', paddingTop: 32 }}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: '#666', marginBottom: 16 }}>この記事を書いたコンサルタント</p>
-                <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', padding: 16, background: '#f9f9f9', borderRadius: 8 }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="https://www.smartboarding.net/_cms_/wp-content/uploads/FCE_main_yokoRGB.png"
-                    alt="株式会社FCE"
-                    style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
-                  />
-                  <div>
-                    <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 2 }}>株式会社FCE</p>
-                    <p style={{ fontSize: 12, color: '#888', marginBottom: 8 }}>（編集部）</p>
-                    <p style={{ fontSize: 13, lineHeight: 1.7, color: '#555' }}>
-                      株式会社FCE 人材育成コラム編集部です。人材開発/研修を検討中の方、組織力の向上を目指し情報収集をしている方向けに有益なコンテンツを発信していけるようサイト運営をしております。
-                    </p>
-                  </div>
-                </div>
-              </div>
             </div>
 
             {/* ───── サイドバー ───── */}
