@@ -28,8 +28,8 @@ export async function GET(request: NextRequest) {
   const perPage = Math.min(100, Math.max(1, parseInt(searchParams.get('per_page') || '100', 10) || 100))
   const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
 
-  const base = wpUrl.replace(/\/$/, '')
-  const url = `${base}/wp-json/wp/v2/tags?per_page=${perPage}&page=${page}&orderby=count&order=desc&_fields=id,name,slug,count`
+  const base = wpUrl.replace(/\/+$/, '')
+  const url = `${base}/?rest_route=${encodeURIComponent('/wp/v2/tags')}&per_page=${perPage}&page=${page}&orderby=count&order=desc&_fields=id,name,slug,count`
 
   const credentials = Buffer.from(`${username}:${appPassword}`, 'utf8').toString('base64')
 

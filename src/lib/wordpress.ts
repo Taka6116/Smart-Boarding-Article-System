@@ -36,6 +36,16 @@ function getWordPressSiteOrigin(): string {
   return 'https://www.smartboarding.net'
 }
 
+/**
+ * WordPress REST API の URL を構築する。
+ * Smart Boarding の WP は wp-json プリティURL が無効のため ?rest_route= 形式を使用。
+ */
+function wpRestUrl(wpUrl: string, route: string): string {
+  const base = wpUrl.replace(/\/+$/, '')
+  const cleanRoute = route.startsWith('/') ? route : `/${route}`
+  return `${base}/?rest_route=${encodeURIComponent(cleanRoute)}`
+}
+
 /** 監修者画像のデフォルト（WORDPRESSメディア投入後は環境変数で上書き推奨） */
 const DEFAULT_SUPERVISOR_IMAGE_URL = 'https://www.smartboarding.net/_cms_/wp-content/uploads/FCE_main_yokoRGB.png'
 
@@ -71,74 +81,7 @@ export function getSupervisorImageUrlForWordPress(): string {
   return getSupervisorImageUrl();
 }
 
-/**
- * WordPress投稿用のCTAバナー画像URLを取得
- * 環境変数 NEXT_PUBLIC_CLOUDFRONT_URL があればCloudFront経由、なければS3直接URLを返す
- */
-function getCtaBannerImageUrl(): string {
-  const cloudFrontUrl = process.env.NEXT_PUBLIC_CLOUDFRONT_URL?.trim();
-  if (cloudFrontUrl) {
-    return `${cloudFrontUrl}/data-for-nas/pictures/NTS+CTA+%E9%9B%BB%E8%A9%B1%E7%95%AA%E5%8F%B7%E4%BB%98%E3%81%8D.png`;
-  }
-  return 'https://data-for-nas.s3.ap-northeast-1.amazonaws.com/pictures/NTS+CTA+%E9%9B%BB%E8%A9%B1%E7%95%AA%E5%8F%B7%E4%BB%98%E3%81%8D.png';
-}
-
-/**
- * CTAバナーのHTMLブロックを生成
- * クリックで Smart Boarding お問い合わせに遷移する（バナー画像は別途差し替え）
- */
-function buildCtaBannerHtml(): string {
-  const imageUrl = getCtaBannerImageUrl();
-  return `<div style="text-align:center;margin:40px 0;padding:0;">
-  <a href="https://www.smartboarding.net/contact/" target="_blank" rel="noopener noreferrer" style="display:inline-block;text-decoration:none;">
-    <img src="${imageUrl}" alt="Smart Boarding へのお問い合わせ・ご相談" style="max-width:100%;width:700px;height:auto;border:none;border-radius:8px;" loading="lazy" />
-  </a>
-</div>`;
-}
-
-/**
- * 記事本文HTMLの「中盤」にCTAバナーを挿入する
- *
- * ロジック:
- * 1. htmlBody 内のすべての <h2 タグの出現位置を取得
- * 2. h2 が3個以上 → 中間のh2の直前に挿入
- * 3. h2 が2個 → 2番目のh2の直前に挿入
- * 4. h2 が1個以下 → 段落(<p>)の中間地点付近の直後に挿入（フォールバック）
- *
- * @param htmlBody convertToHtml + linkifyCtaUrls 適用済みの本文HTML
- * @returns CTAバナーが挿入された本文HTML
- */
-function insertCtaBannerIntoBody(htmlBody: string): string {
-  const ctaBannerHtml = buildCtaBannerHtml();
-
-  // 優先: 「まとめ」を含む h2 タグの直前に挿入
-  const matomeRegex = /<h2[^>]*>[^<]*まとめ[^<]*<\/h2>/gi;
-  const matomeMatch = matomeRegex.exec(htmlBody);
-  if (matomeMatch) {
-    return htmlBody.slice(0, matomeMatch.index) + ctaBannerHtml + '\n' + htmlBody.slice(matomeMatch.index);
-  }
-
-  // 次点: 「まとめ」で始まる段落/小見出しの直前に挿入
-  const matomeBlockRegex = /<(h2|h3|p)[^>]*>\s*(?:<strong>)?\s*まとめ[\s\S]*?<\/\1>/i;
-  const matomeBlockMatch = matomeBlockRegex.exec(htmlBody);
-  if (matomeBlockMatch && matomeBlockMatch.index !== undefined) {
-    return htmlBody.slice(0, matomeBlockMatch.index) + ctaBannerHtml + '\n' + htmlBody.slice(matomeBlockMatch.index);
-  }
-
-  // フォールバック: 最後の h2 の直前に挿入
-  const h2Regex = /<h2[\s>]/gi;
-  const h2Positions: number[] = [];
-  let match: RegExpExecArray | null;
-  while ((match = h2Regex.exec(htmlBody)) !== null) {
-    h2Positions.push(match.index);
-  }
-  if (h2Positions.length >= 2) {
-    const lastH2Pos = h2Positions[h2Positions.length - 1]!;
-    return htmlBody.slice(0, lastH2Pos) + ctaBannerHtml + '\n' + htmlBody.slice(lastH2Pos);
-  }
-
-  return htmlBody + '\n' + ctaBannerHtml;
-}
+/* CTA バナーは Smart Boarding コラムでは使用しないため無効化 */
 
 /** メディアアップロード結果（アイキャッチ設定と本文挿入用URL） */
 interface WordPressMediaUploadResult {
@@ -157,9 +100,9 @@ async function uploadBase64ImageToWordPress(
 ): Promise<WordPressMediaUploadResult> {
   const buffer = Buffer.from(base64, 'base64');
   const ext = mimeType.split('/')[1] ?? 'png';
-  const fileName = `nas-image-${Date.now()}.${ext}`;
+  const fileName = `sb-image-${Date.now()}.${ext}`;
 
-  const res = await fetch(`${wpUrl}/wp-json/wp/v2/media`, {
+  const res = await fetch(wpRestUrl(wpUrl, '/wp/v2/media'), {
     method: 'POST',
     headers: {
       'Authorization': `Basic ${credentials}`,
@@ -575,7 +518,7 @@ function buildArticleSchema(
     },
     'mainEntityOfPage': {
       '@type': 'WebPage',
-      '@id': `${getWordPressSiteOrigin()}/news/${slug}/`,
+      '@id': `${getWordPressSiteOrigin()}/column/${slug}/`,
     },
     'about': {
       '@type': 'Thing',
@@ -795,9 +738,6 @@ export function buildPostContent(
   let htmlBody = convertToHtml(bodyText);
   htmlBody = linkifyCtaUrls(htmlBody);
 
-  // 1-0. CTAバナーを本文中盤に挿入
-  htmlBody = insertCtaBannerIntoBody(htmlBody);
-
   // 1-0a. テキスト版FAQ（「よくある質問」H2以降のQ/Aテキスト）を除去（アコーディオンで置換するため）
   htmlBody = stripTextFaqFromHtml(htmlBody);
 
@@ -861,7 +801,7 @@ async function findOrCreateWordPressTagId(
   credentials: string,
   wpUrl: string
 ): Promise<number> {
-  const searchUrl = `${wpUrl}/wp-json/wp/v2/tags?search=${encodeURIComponent(name)}&per_page=30`;
+  const searchUrl = `${wpRestUrl(wpUrl, '/wp/v2/tags')}&search=${encodeURIComponent(name)}&per_page=30`;
   const searchRes = await fetch(searchUrl, {
     headers: { Authorization: `Basic ${credentials}` },
   });
@@ -871,7 +811,7 @@ async function findOrCreateWordPressTagId(
     if (exact) return exact.id;
   }
 
-  const createRes = await fetch(`${wpUrl}/wp-json/wp/v2/tags`, {
+  const createRes = await fetch(wpRestUrl(wpUrl, '/wp/v2/tags'), {
     method: 'POST',
     headers: {
       Authorization: `Basic ${credentials}`,
@@ -933,9 +873,9 @@ export async function postToWordPress(
     throw new Error(`WordPressの環境変数が設定されていません: ${missing.join(', ')}`);
   }
 
-  const rawCategoryId = process.env.WORDPRESS_CATEGORY_ID?.trim() || '115';
+  const rawCategoryId = process.env.WORDPRESS_CATEGORY_ID?.trim() || '68';
   const categoryId = parseInt(rawCategoryId, 10);
-  const safeCategoryId = Number.isNaN(categoryId) || categoryId < 1 ? 115 : categoryId;
+  const safeCategoryId = Number.isNaN(categoryId) || categoryId < 1 ? 68 : categoryId;
 
   // Basic認証のトークンを生成
   const credentials = Buffer.from(`${username}:${appPassword}`).toString('base64');
@@ -971,7 +911,7 @@ export async function postToWordPress(
     tagIds = await resolveWordPressTagIds(tagNames, credentials, wpUrl);
   }
 
-  const requestUrl = `${wpUrl}/wp-json/wp/v2/posts`;
+  const requestUrl = wpRestUrl(wpUrl, '/wp/v2/column');
   const authHeaderValue = `Basic ***`; // ログ用（パスワードは出さない）
 
   try {
@@ -989,7 +929,7 @@ export async function postToWordPress(
         slug: canonicalSlug,
         ...(mediaId ? { featured_media: mediaId } : {}),
         ...(status === 'future' && options?.scheduledDate ? { date: options.scheduledDate } : {}),
-        categories: [safeCategoryId],
+        column__category: [safeCategoryId],
         ...(tagIds && tagIds.length > 0 ? { tags: tagIds } : {}),
       }),
     });
