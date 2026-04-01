@@ -54,7 +54,7 @@ export default function NoticePage() {
         <pre
           className="mb-4 overflow-x-auto rounded-lg border border-slate-200 bg-white p-4 text-xs leading-relaxed text-[#1e293b] font-mono"
           tabIndex={0}
-        >{`"keywords": "M&A 手数料 高い, ma 手数料, M&A手数料, M&A コスト",`}</pre>
+        >{`"keywords": "eラーニング 効果, オンライン研修 メリット, 社員研修 オンライン, 人材育成 方法",`}</pre>
         <p className="text-sm text-[#334155] leading-relaxed">
           Google でユーザーがそれらの検索をしたときに表示される仕組みになっているため、
           <strong className="font-semibold text-[#1A1A2E]">とても重要な項目</strong>です。

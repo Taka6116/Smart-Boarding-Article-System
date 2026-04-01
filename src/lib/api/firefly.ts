@@ -99,46 +99,42 @@ export async function generateImageWithFirefly(
 export function buildPrompt(title: string, content: string): string {
   const text = title + content.slice(0, 200)
 
-  const isContract = /契約|NDA|秘密保持|意向表明/.test(text)
-  const isFinance = /補助金|税制|融資|資金|節税|バリュエーション|企業価値/.test(text)
-  const isPMI = /PMI|統合|経営統合/.test(text)
-  const isSuccession = /後継者|引継|承継/.test(text)
-  const isMA = /M&A|買収|合併|仲介|売却/.test(text)
+  const isTraining = /研修|トレーニング|セミナー|講座|ワークショップ/.test(text)
+  const isELearning = /eラーニング|オンライン学習|LMS|動画研修|オンボーディング/.test(text)
+  const isHR = /人事|採用|離職|定着|エンゲージメント|タレントマネジメント/.test(text)
+  const isLeadership = /リーダー|管理職|マネジメント|1on1|フィードバック|OJT/.test(text)
+  const isSkill = /スキル|育成|人材開発|キャリア|成長|組織開発/.test(text)
 
-  // 全テーマ共通：顔アップ禁止・引き画・手元・書類メイン
   let theme = ''
 
-  if (isContract) {
+  if (isTraining) {
     theme =
-      'overhead flat-lay of business contract documents and fountain pen on white desk, professional corporate photography'
-  } else if (isFinance) {
+      'bright modern training room with presenter pointing at screen showing abstract slides, audience seen from behind, professional daylight, no readable text on screen'
+  } else if (isELearning) {
     theme =
-      'overhead view of financial charts, graphs and business reports spread on conference table with hands pointing, no faces visible'
-  } else if (isPMI) {
+      'person at modern desk with laptop showing abstract online learning UI with progress bar, headphones on desk, bright natural light, side angle, face not dominant, no readable text'
+  } else if (isHR) {
     theme =
-      'wide shot of modern Japanese conference room, business team seen from behind gathered around table with documents, integration meeting'
-  } else if (isSuccession) {
-    theme =
-      'mid shot of two pairs of hands exchanging business documents across a desk, warm office lighting, succession symbolism, no faces'
-  } else if (isMA) {
-    const maThemes = [
-      'professional handshake between two business people in dark navy and grey suits, clean white or light grey minimalist background, symbolic of M&A deal and partnership, corporate stock photography style, upper body and hands visible, photorealistic',
-      'overhead flat-lay of M&A themed objects on white desk: wooden or cardboard blocks spelling M and A, business documents, laptop, calculator, pen, professional corporate stock photography, clean minimal style, no people',
-      'wooden blocks stacked vertically with M and A letters on each, placed on business documents with graphs and charts, clean light grey or white background, shallow depth of field, professional corporate stock photography',
-      'businessman hand in dark suit sleeve over business documents and charts, symbolic of M&A or deal-making, professional conceptual corporate photography, clean neutral background, no face visible, photorealistic',
-      'close-up of business meeting table with multiple hands holding tablet and documents, pen and calculator, collaborative discussion, no faces visible, clean white table, natural light, professional corporate stock photography',
+      'two HR professionals at bright white desk, open binder with training schedule and tablet showing abstract dashboard, hands reviewing documents in sharp focus, faces softly blurred, modern office'
+  } else if (isLeadership) {
+    const leaderThemes = [
+      'wide shot of seminar room, participants with laptops and notebooks, abstract projection on whiteboard, no facial close-ups, professional corporate atmosphere',
+      'upward staircase in bright corporate lobby with glass and greenery, aspirational growth metaphor, minimal abstract, no text, no people',
     ]
-    theme = maThemes[Math.floor(Math.random() * maThemes.length)]!
+    theme = leaderThemes[Math.floor(Math.random() * leaderThemes.length)]!
+  } else if (isSkill) {
+    theme =
+      'modern office atrium with ascending pathway, bright natural lighting, skill development and growth concept, no people visible, no readable text'
   } else {
     theme =
-      'overhead flat-lay of Japanese business documents, notebook, pen and laptop on clean office desk, professional corporate style'
+      'overhead flat-lay of HR training documents, notebook, pen and laptop with abstract e-learning screen on clean office desk, professional corporate style, no people, no readable text'
   }
 
   return [
     theme,
     'professional Japanese corporate photography',
     'photorealistic high quality',
-    'navy blue white grey color palette',
+    'sky blue white light grey color palette',
     'soft natural window lighting',
     'NO faces NO close-up portraits NO headshots',
     'NO text NO watermark NO logo',

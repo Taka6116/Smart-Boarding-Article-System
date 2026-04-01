@@ -7,7 +7,7 @@ const STEPS = [
   { label: '記事を読み込んでいます',      detail: '文章構造・段落・キーワードを解析中...' },
   { label: 'SEO品質をチェックしています', detail: '見出し構成・キーワード密度・読みやすさを確認中...' },
   { label: '文章を改善しています',        detail: 'より自然で説得力のある表現に書き直し中...' },
-  { label: '最終チェックをしています',    detail: 'M&A業界の専門性・正確性を確認中...' },
+  { label: '最終チェックをしています',    detail: '人材育成・研修領域の専門性・正確性を確認中...' },
 ]
 
 export default function GeminiLoadingCard() {

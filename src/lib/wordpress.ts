@@ -37,7 +37,7 @@ function getWordPressSiteOrigin(): string {
 }
 
 /** 監修者画像のデフォルト（WORDPRESSメディア投入後は環境変数で上書き推奨） */
-const DEFAULT_SUPERVISOR_IMAGE_URL = 'https://nihon-teikei.co.jp/wp-content/uploads/2026/03/3159097ae625791c1a400e6900330153.png'
+const DEFAULT_SUPERVISOR_IMAGE_URL = 'https://www.smartboarding.net/_cms_/wp-content/uploads/FCE_main_yokoRGB.png'
 
 /** 旧S3の監修者画像URL（このURLの場合はWordPressのURLに差し替える） */
 const LEGACY_S3_SUPERVISOR_PATTERN = /data-for-nas\.s3\.ap-northeast-1\.amazonaws\.com\/pictures\//i
@@ -668,10 +668,8 @@ function stripLeadingSupervisorText(content: string): string {
     if (
       /^監修者[：:]\s*/.test(trimmed) ||
       /^実績[：:]\s*/.test(trimmed) ||
-      /^株式会社日本提携支援\s+代表/.test(trimmed) ||
       /^株式会社FCE\s+代表/.test(trimmed) ||
-      /^石川\s*淳悦/.test(trimmed) ||
-      /^\(株\)日本M&Aセンター/.test(trimmed)
+      /^石川\s*淳悦/.test(trimmed)
     ) {
       i++;
       continue;
@@ -740,14 +738,6 @@ function linkifyCtaUrls(html: string): string {
     .replace(
       /導入事例はこちらから\s+https?:\/\/nihon-teikei\.co\.jp\/news\/casestudy\/?/g,
       '<a href="https://www.smartboarding.net/documents/1978/">導入事例はこちらから</a>'
-    )
-    .replace(
-      /待っているだけでオファーが届くM&Aオファーはこちら\s+https?:\/\/nihon-teikei\.com\/ma-offer/g,
-      '<a href="https://www.smartboarding.net/trial/">14日間無料トライアルはこちら</a>'
-    )
-    .replace(
-      /待っているだけでオファーが届くM&amp;Aオファーはこちら\s+https?:\/\/nihon-teikei\.com\/ma-offer/g,
-      '<a href="https://www.smartboarding.net/trial/">14日間無料トライアルはこちら</a>'
     );
 }
 

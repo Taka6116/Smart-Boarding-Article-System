@@ -119,7 +119,7 @@ function stripSupervisorText(content: string): string {
   if (!content) return content
   return content
     .replace(/.*監修者：株式会社FCE 代表取締役社長 石川 淳悦.*\n?/g, '')
-    .replace(/.*監修者：株式会社日本提携支援 代表取締役 大野 駿介.*\n?/g, '')
+    .replace(/.*監修者：株式会社日本提携支援.*\n?/g, '')
     .replace(/.*実績：過去1,000件超のM(&amp;|&)A相談、50件超のアドバイザリー契約、15組超のM(&amp;|&)A成約組数を担当。.*\n?/g, '')
     .replace(/.*\(株\)日本M(&amp;|&)Aセンターにて、年間最多アドバイザリー契約受賞経験あり。.*\n?/g, '')
     .replace(/\n{3,}/g, '\n\n')

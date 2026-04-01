@@ -109,7 +109,7 @@ export default function KeywordsPage() {
                 type="text"
                 value={editTitle}
                 onChange={e => setEditTitle(e.target.value)}
-                placeholder="例：事業承継コラム用"
+                placeholder="例：人材育成コラム用"
                 className="w-full px-4 py-2.5 rounded-lg border border-[#E2E8F0] focus:ring-2 focus:ring-[#1A9FCC]/30 focus:border-[#1A9FCC] outline-none transition-all text-sm"
               />
             </div>
@@ -120,7 +120,7 @@ export default function KeywordsPage() {
               <textarea
                 value={editContent}
                 onChange={e => setEditContent(e.target.value)}
-                placeholder="例：事業承継 M&A, 中小企業 事業承継, 後継者不足, M&A 相談, デューデリジェンス, アドバイザー 選び方"
+                placeholder="例：eラーニング 効果, オンボーディング 研修, 社員研修 オンライン, 人材育成 方法, 管理職研修, 1on1 やり方"
                 className="w-full px-4 py-3 rounded-lg border border-[#E2E8F0] focus:ring-2 focus:ring-[#1A9FCC]/30 focus:border-[#1A9FCC] outline-none transition-all text-sm resize-y min-h-[120px]"
               />
             </div>

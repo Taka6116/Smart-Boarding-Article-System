@@ -11,7 +11,7 @@ export default function Header({ currentStep, onReset }: HeaderProps) {
     <header className="h-14 bg-[#1A9FCC] flex items-center justify-between px-6 sticky top-0 z-50">
       <div className="flex items-center gap-3">
         <span className="text-white text-xl font-bold tracking-wide">SBAS</span>
-        <span className="text-[#94A3B8] text-xs font-mono">Smart Boarding Article System</span>
+        <span className="text-white text-xs font-mono">Smart Boarding Article System</span>
       </div>
 
       <div className="flex items-center gap-4">

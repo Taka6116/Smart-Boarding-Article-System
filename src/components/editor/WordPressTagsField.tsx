@@ -475,7 +475,7 @@ export default function WordPressTagsField({ value, onChange }: WordPressTagsFie
                 addFreeText()
               }
             }}
-            placeholder="例: DD（デューデリジェンス）、売却"
+            placeholder="例: eラーニング、オンボーディング、管理職研修"
             autoComplete="off"
             className="flex-1 px-4 py-2.5 rounded-lg border border-[#E2E8F0] text-sm text-[#1A1A2E] focus:outline-none focus:ring-2 focus:ring-[#1A9FCC]/30 focus:border-[#1A9FCC]"
           />

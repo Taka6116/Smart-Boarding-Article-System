@@ -217,7 +217,7 @@ export default function ArticleInput({
                 <textarea
                   value={prompt}
                   onChange={e => setPrompt(e.target.value)}
-                  placeholder="例：事業承継の基礎について、相談先の種類・手順・注意点を分かりやすく2000字程度で記事を書いてください"
+                  placeholder="例：新人研修の効果を高めるオンボーディング設計について、ポイント・手順・注意点を分かりやすく2000字程度で記事を書いてください"
                   className="
                     w-full px-4 py-3 rounded-lg border border-[#E2E8F0]
                     text-[#1A1A2E] placeholder-[#CBD5E1]
@@ -279,7 +279,7 @@ export default function ArticleInput({
                   type="text"
                   value={article.targetKeyword ?? ''}
                   onChange={e => onTargetKeywordChange(e.target.value)}
-                  placeholder="例：事業承継 M&A, 中小企業 事業承継, 後継者不足, M&A 相談, デューデリジェンス, アドバイザー 選び方"
+                  placeholder="例：eラーニング 効果, オンボーディング 研修, 社員研修 オンライン, 人材育成 方法, 管理職研修, 1on1 やり方"
                   className="w-full px-4 py-3 rounded-lg text-sm border border-[#E2E8F0] text-[#1A1A2E] bg-[#FAFBFC] focus:outline-none focus:ring-2 focus:ring-[#1A9FCC]/30"
                 />
               </div>
