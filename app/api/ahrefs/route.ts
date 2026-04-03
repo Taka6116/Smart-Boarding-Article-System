@@ -104,16 +104,22 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const { id } = (await request.json()) as { id: string }
-    if (!id) {
-      return NextResponse.json({ error: 'IDが必要です' }, { status: 400 })
+    const body = (await request.json()) as { id?: string }
+
+    if (body.id) {
+      const ok = await deleteS3Object(datasetKey(body.id))
+      if (!ok) {
+        return NextResponse.json({ error: '削除に失敗しました' }, { status: 500 })
+      }
+      return NextResponse.json({ success: true })
     }
 
-    const ok = await deleteS3Object(datasetKey(id))
-    if (!ok) {
-      return NextResponse.json({ error: '削除に失敗しました' }, { status: 500 })
+    const objects = await listS3Objects(PREFIX)
+    const jsonFiles = objects.filter(o => o.key.endsWith('.json'))
+    for (const obj of jsonFiles) {
+      await deleteS3Object(obj.key)
     }
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, deleted: jsonFiles.length })
   } catch (e) {
     console.error('Ahrefs DELETE error:', e)
     return NextResponse.json({ error: '削除に失敗しました' }, { status: 500 })

@@ -40,6 +40,7 @@ export default function ArticleInput({
   const [showPromptDropdown, setShowPromptDropdown] = useState(false)
   const [showKeywordDropdown, setShowKeywordDropdown] = useState(false)
   const [fromAhrefs, setFromAhrefs] = useState(false)
+  const kwParamsApplied = useRef(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const keywordDropdownRef = useRef<HTMLDivElement>(null)
 
@@ -54,12 +55,18 @@ export default function ArticleInput({
   }, [reloadLibraries])
 
   useEffect(() => {
+    if (kwParamsApplied.current) return
     if (searchParams.get('fromAhrefs') === 'true') {
+      kwParamsApplied.current = true
       const ahrefsPrompt = searchParams.get('prompt')
-      if (ahrefsPrompt) setPrompt(ahrefsPrompt)
+      const kwTarget = searchParams.get('targetKeyword')
+      if (ahrefsPrompt && !prompt) setPrompt(ahrefsPrompt)
+      if (kwTarget && !(article.targetKeyword ?? '').trim()) {
+        onTargetKeywordChange(kwTarget)
+      }
       setFromAhrefs(true)
     }
-  }, [searchParams])
+  }, [searchParams, prompt, article.targetKeyword, onTargetKeywordChange])
 
   useEffect(() => {
     const onVisible = () => {
