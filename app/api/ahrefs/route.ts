@@ -6,6 +6,34 @@ export const dynamic = 'force-dynamic'
 
 const PREFIX = 'ahrefs/uploads/'
 
+async function decodeFileToUtf8(file: File): Promise<string> {
+  const buf = Buffer.from(await file.arrayBuffer())
+
+  // UTF-16 LE BOM (0xFF 0xFE)
+  if (buf.length >= 2 && buf[0] === 0xFF && buf[1] === 0xFE) {
+    const content = buf.toString('utf16le')
+    return content.charCodeAt(0) === 0xFEFF ? content.slice(1) : content
+  }
+
+  // UTF-16 BE BOM (0xFE 0xFF)
+  if (buf.length >= 2 && buf[0] === 0xFE && buf[1] === 0xFF) {
+    const swapped = Buffer.alloc(buf.length)
+    for (let i = 0; i < buf.length - 1; i += 2) {
+      swapped[i] = buf[i + 1]
+      swapped[i + 1] = buf[i]
+    }
+    const content = swapped.toString('utf16le')
+    return content.charCodeAt(0) === 0xFEFF ? content.slice(1) : content
+  }
+
+  // UTF-8 BOM (0xEF 0xBB 0xBF)
+  if (buf.length >= 3 && buf[0] === 0xEF && buf[1] === 0xBB && buf[2] === 0xBF) {
+    return buf.toString('utf8').slice(1)
+  }
+
+  return buf.toString('utf8')
+}
+
 function datasetKey(id: string): string {
   return `${PREFIX}${id}.json`
 }
@@ -54,7 +82,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'CSVファイルを選択してください' }, { status: 400 })
     }
 
-    const text = await file.text()
+    const text = await decodeFileToUtf8(file)
     const dataset = parseAhrefsCsv(text, file.name)
 
     const ok = await putS3Object(datasetKey(dataset.id), JSON.stringify(dataset))
