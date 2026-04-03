@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" fill="none">
+  <!-- Circle with S-step icon -->
+  <circle cx="24" cy="24" r="22" fill="rgba(255,255,255,0.2)"/>
+  <path d="M15 16h10v5H15zM19 21h10v5H19zM15 26h10v5H15zM19 31h10v5H19z" fill="white" fill-opacity="0.95"/>
+  <!-- Text -->
+  <text x="54" y="22" font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif" font-weight="700" font-size="16" fill="white" letter-spacing="0.3">Smart</text>
+  <text x="110" y="22" font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif" font-weight="700" font-size="16" fill="white" letter-spacing="0.3">Boarding</text>
+  <text x="54" y="38" font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif" font-weight="400" font-size="8" fill="rgba(255,255,255,0.6)" letter-spacing="1.5">ARTICLE SYSTEM</text>
+</svg>

@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import MainContentWidth from './MainContentWidth'
 
@@ -69,8 +70,16 @@ export default function LayoutWithSidebar({
           </div>
         </nav>
 
-        <div className="px-5 py-3 text-[10px] text-[#94A3B8] border-t" style={{ borderColor: '#2AA3D0' }}>
-          <p>© 株式会社FCE</p>
+        <div className="px-4 py-4 border-t flex flex-col items-center gap-2" style={{ borderColor: '#2AA3D0' }}>
+          <Image
+            src="/logo-white.svg"
+            alt="Smart Boarding"
+            width={180}
+            height={44}
+            className="opacity-90"
+            priority
+          />
+          <p className="text-[10px] text-white/40">© 株式会社FCE</p>
         </div>
       </aside>
 

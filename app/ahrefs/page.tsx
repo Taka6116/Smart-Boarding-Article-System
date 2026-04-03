@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Upload, Trash2, X, TrendingUp, Target, ArrowRight, Search, ChevronDown, Globe, Star, FileUp } from 'lucide-react'
+import { Upload, Trash2, X, TrendingUp, Target, ArrowRight, Search, ChevronDown, Globe, FileUp } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import type { AhrefsKeywordRow, AhrefsDataset, AhrefsDatasetType } from '@/lib/ahrefsCsvParser'
 import { analyzeKeywords, detectTrends, getCategories, type ScoredKeyword, type TrendKeyword, type PriorityLevel } from '@/lib/ahrefsAnalyzer'
@@ -11,8 +11,8 @@ type SortKey = 'priority' | 'score' | 'volume' | 'kd' | 'cpc' | 'keyword' | 'pos
 type Tab = 'opportunities' | 'trends' | 'all' | 'organic'
 
 function PriorityBadge({ level }: { level: PriorityLevel }) {
-  if (level === 3) return <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700"><Star size={10} className="fill-amber-500" />★★★</span>
-  if (level === 2) return <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700">★★</span>
+  if (level === 3) return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500 text-white">★★★</span>
+  if (level === 2) return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-500 text-white">★★</span>
   if (level === 1) return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">★</span>
   return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs text-gray-300">−</span>
 }
@@ -412,7 +412,7 @@ export default function AhrefsPage() {
                 filterCategory === 'all' ? 'bg-[#33B5E5] text-white' : 'bg-white border border-[#E2E8F0] text-[#64748B] hover:border-[#33B5E5]'
               }`}
             >
-              全カテゴリ ({activeData.length})
+              すべて ({activeData.length})
             </button>
             {categories.map(c => (
               <button
@@ -428,21 +428,22 @@ export default function AhrefsPage() {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-1 mb-4 bg-[#F1F5F9] rounded-lg p-1 w-fit">
+          <div className="flex gap-6 mb-4 border-b border-[#E2E8F0]">
             {([
-              { key: 'opportunities' as Tab, label: '狙い目KW', icon: Target, show: hasKw },
-              { key: 'organic' as Tab, label: '競合KW', icon: Globe, show: hasOrganic },
-              { key: 'trends' as Tab, label: 'トレンド', icon: TrendingUp, show: hasKw },
-              { key: 'all' as Tab, label: '全データ', icon: Search, show: hasKw },
+              { key: 'opportunities' as Tab, label: '狙い目KW', show: hasKw },
+              { key: 'organic' as Tab, label: '競合KW', show: hasOrganic },
+              { key: 'trends' as Tab, label: 'トレンド', show: hasKw },
+              { key: 'all' as Tab, label: '全データ', show: hasKw },
             ]).filter(t => t.show).map(t => (
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  tab === t.key ? 'bg-white text-[#1A1A2E] shadow-sm' : 'text-[#64748B] hover:text-[#1A1A2E]'
+                className={`pb-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
+                  tab === t.key
+                    ? 'border-[#009AE0] text-[#009AE0]'
+                    : 'border-transparent text-[#64748B] hover:text-[#1A1A2E]'
                 }`}
               >
-                <t.icon size={14} />
                 {t.label}
               </button>
             ))}
@@ -518,9 +519,6 @@ export default function AhrefsPage() {
                       <th style={{ width: isOrganicTab ? '20%' : '26%' }} className="text-left py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('keyword')}>
                         <span className="inline-flex items-center gap-1">キーワード <SortIcon field="keyword" /></span>
                       </th>
-                      <th style={{ width: '8%' }} className="text-center py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('priority')}>
-                        <span className="inline-flex items-center gap-1 justify-center">優先度 <SortIcon field="priority" /></span>
-                      </th>
                       <th style={{ width: '8%' }} className="text-right py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('volume')}>
                         <span className="inline-flex items-center gap-1 justify-end">Volume <SortIcon field="volume" /></span>
                       </th>
@@ -529,6 +527,9 @@ export default function AhrefsPage() {
                       </th>
                       <th style={{ width: '7%' }} className="text-right py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('cpc')}>
                         <span className="inline-flex items-center gap-1 justify-end">CPC <SortIcon field="cpc" /></span>
+                      </th>
+                      <th style={{ width: '8%' }} className="text-center py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('priority')}>
+                        <span className="inline-flex items-center gap-1 justify-center">優先度 <SortIcon field="priority" /></span>
                       </th>
                       <th style={{ width: '7%' }} className="text-right py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('score')}>
                         <span className="inline-flex items-center gap-1 justify-end">スコア <SortIcon field="score" /></span>
@@ -556,14 +557,14 @@ export default function AhrefsPage() {
                             <span className="block text-[10px] text-[#94A3B8] truncate mt-0.5">{kw.url}</span>
                           )}
                         </td>
-                        <td className="py-3 px-4 text-center"><PriorityBadge level={kw.priority} /></td>
                         <td className="py-3 px-4 text-right text-[#1A1A2E]">{kw.volume.toLocaleString()}</td>
                         <td className="py-3 px-4 text-right">
                           <span className={`font-medium ${kdColor(kw.kd)}`}>{kw.kd}</span>
                         </td>
-                        <td className="py-3 px-4 text-right text-[#64748B]">¥{kw.cpc}</td>
+                        <td className="py-3 px-4 text-right text-[#64748B]">{kw.cpc > 0 ? `¥${kw.cpc}` : '-'}</td>
+                        <td className="py-3 px-4 text-center"><PriorityBadge level={kw.priority} /></td>
                         <td className="py-3 px-4 text-right">
-                          <span className={`font-bold ${kw.score >= 50 ? 'text-[#33B5E5]' : kw.score >= 30 ? 'text-[#1A1A2E]' : 'text-[#94A3B8]'}`}>
+                          <span className={`font-bold ${kw.score >= 50 ? 'text-[#009AE0]' : kw.score >= 30 ? 'text-[#1A1A2E]' : 'text-[#94A3B8]'}`}>
                             {kw.score}
                           </span>
                         </td>
@@ -590,7 +591,7 @@ export default function AhrefsPage() {
                             className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-colors ${
                               kw.priority === 3
                                 ? 'bg-[#E67E22] hover:bg-[#D35400]'
-                                : 'bg-[#33B5E5] hover:bg-[#2AA3D0]'
+                                : 'bg-[#009AE0] hover:bg-[#0088C6]'
                             }`}
                           >
                             <ArrowRight size={12} /> 記事作成
