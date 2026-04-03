@@ -516,36 +516,36 @@ export default function AhrefsPage() {
                 <table className="w-full text-sm table-fixed">
                   <thead>
                     <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
-                      <th style={{ width: isOrganicTab ? '20%' : '26%' }} className="text-left py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('keyword')}>
+                      <th style={{ width: isOrganicTab ? '17%' : '26%' }} className="text-left py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('keyword')}>
                         <span className="inline-flex items-center gap-1">キーワード <SortIcon field="keyword" /></span>
                       </th>
-                      <th style={{ width: '8%' }} className="text-right py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('volume')}>
+                      <th style={{ width: isOrganicTab ? '7%' : '8%' }} className="text-right py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('volume')}>
                         <span className="inline-flex items-center gap-1 justify-end">Volume <SortIcon field="volume" /></span>
                       </th>
-                      <th style={{ width: '7%' }} className="text-right py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('kd')}>
+                      <th style={{ width: isOrganicTab ? '5%' : '7%' }} className="text-right py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('kd')}>
                         <span className="inline-flex items-center gap-1 justify-end">KD <SortIcon field="kd" /></span>
                       </th>
-                      <th style={{ width: '7%' }} className="text-right py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('cpc')}>
+                      <th style={{ width: isOrganicTab ? '6%' : '7%' }} className="text-right py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('cpc')}>
                         <span className="inline-flex items-center gap-1 justify-end">CPC <SortIcon field="cpc" /></span>
                       </th>
                       <th style={{ width: '8%' }} className="text-center py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('priority')}>
                         <span className="inline-flex items-center gap-1 justify-center">優先度 <SortIcon field="priority" /></span>
                       </th>
-                      <th style={{ width: '7%' }} className="text-right py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('score')}>
+                      <th style={{ width: isOrganicTab ? '6%' : '7%' }} className="text-right py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('score')}>
                         <span className="inline-flex items-center gap-1 justify-end">スコア <SortIcon field="score" /></span>
                       </th>
                       {isOrganicTab && (
                         <>
-                          <th style={{ width: '7%' }} className="text-right py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('position')}>
+                          <th style={{ width: '5%' }} className="text-right py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('position')}>
                             <span className="inline-flex items-center gap-1 justify-end">順位 <SortIcon field="position" /></span>
                           </th>
-                          <th style={{ width: '8%' }} className="text-right py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('trafficChange')}>
+                          <th style={{ width: '7%' }} className="text-right py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('trafficChange')}>
                             <span className="inline-flex items-center gap-1 justify-end">流入変動 <SortIcon field="trafficChange" /></span>
                           </th>
                         </>
                       )}
-                      <th style={{ width: isOrganicTab ? '10%' : '12%' }} className="text-center py-3 px-4 font-semibold text-[#64748B]">カテゴリ</th>
-                      <th style={{ width: isOrganicTab ? '10%' : '12%' }} className="text-center py-3 px-4 font-semibold text-[#64748B]">アクション</th>
+                      <th style={{ width: isOrganicTab ? '9%' : '12%' }} className="text-center py-3 px-4 font-semibold text-[#64748B]">カテゴリ</th>
+                      <th style={{ width: isOrganicTab ? '12%' : '12%' }} className="text-center py-3 px-4 font-semibold text-[#64748B]">アクション</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -588,7 +588,7 @@ export default function AhrefsPage() {
                         <td className="py-3 px-4 text-center">
                           <button
                             onClick={() => handleCreateArticle(kw)}
-                            className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-colors ${
+                            className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-white whitespace-nowrap transition-colors ${
                               kw.priority === 3
                                 ? 'bg-[#E67E22] hover:bg-[#D35400]'
                                 : 'bg-[#009AE0] hover:bg-[#0088C6]'
