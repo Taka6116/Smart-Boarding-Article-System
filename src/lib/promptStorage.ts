@@ -1,5 +1,3 @@
-'use client'
-
 export interface SavedPrompt {
   id: string
   title: string
@@ -8,50 +6,57 @@ export interface SavedPrompt {
   updatedAt: string
 }
 
-const PROMPTS_STORAGE_KEY = 'nas_user_prompts'
-
-export function getAllPrompts(): SavedPrompt[] {
-  if (typeof window === 'undefined') return []
+export async function getAllPrompts(): Promise<SavedPrompt[]> {
   try {
-    const data = localStorage.getItem(PROMPTS_STORAGE_KEY)
-    return data ? JSON.parse(data) : []
+    const res = await fetch('/api/prompts')
+    if (!res.ok) return []
+    const data = await res.json()
+    return data.prompts ?? []
   } catch {
     return []
   }
 }
 
-export function savePrompt(prompt: Omit<SavedPrompt, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): SavedPrompt {
-  const prompts = getAllPrompts()
+export async function savePrompt(
+  prompt: Omit<SavedPrompt, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }
+): Promise<SavedPrompt> {
   const now = new Date().toISOString()
-
-  if (prompt.id) {
-    const index = prompts.findIndex(p => p.id === prompt.id)
-    if (index >= 0) {
-      prompts[index] = {
-        ...prompts[index],
-        title: prompt.title,
-        content: prompt.content,
-        updatedAt: now,
-      }
-      localStorage.setItem(PROMPTS_STORAGE_KEY, JSON.stringify(prompts))
-      return prompts[index]
-    }
-  }
-
-  const newPrompt: SavedPrompt = {
-    id: String(Date.now()),
+  const saved: SavedPrompt = {
+    id: prompt.id || String(Date.now()),
     title: prompt.title,
     content: prompt.content,
     createdAt: now,
     updatedAt: now,
   }
-  prompts.push(newPrompt)
-  localStorage.setItem(PROMPTS_STORAGE_KEY, JSON.stringify(prompts))
-  return newPrompt
+
+  if (prompt.id) {
+    const existing = await getAllPrompts()
+    const prev = existing.find(p => p.id === prompt.id)
+    if (prev) {
+      saved.createdAt = prev.createdAt
+    }
+  }
+
+  const res = await fetch('/api/prompts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(saved),
+  })
+
+  if (!res.ok) {
+    throw new Error('プロンプトの保存に失敗しました')
+  }
+  return saved
 }
 
-export function deletePrompt(id: string): void {
-  const prompts = getAllPrompts()
-  const filtered = prompts.filter(p => p.id !== id)
-  localStorage.setItem(PROMPTS_STORAGE_KEY, JSON.stringify(filtered))
+export async function deletePrompt(id: string): Promise<void> {
+  const res = await fetch('/api/prompts', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id }),
+  })
+
+  if (!res.ok) {
+    throw new Error('プロンプトの削除に失敗しました')
+  }
 }

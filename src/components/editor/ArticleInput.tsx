@@ -40,9 +40,10 @@ export default function ArticleInput({
   const dropdownRef = useRef<HTMLDivElement>(null)
   const keywordDropdownRef = useRef<HTMLDivElement>(null)
 
-  const reloadLibraries = useCallback(() => {
-    setSavedPrompts(getAllPrompts())
-    setSavedKeywords(getAllKeywords())
+  const reloadLibraries = useCallback(async () => {
+    const [p, k] = await Promise.all([getAllPrompts(), getAllKeywords()])
+    setSavedPrompts(p)
+    setSavedKeywords(k)
   }, [])
 
   useEffect(() => {

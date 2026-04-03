@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Plus, Pencil, Trash2, X, Check } from 'lucide-react'
 import { SavedPrompt, getAllPrompts, savePrompt, deletePrompt } from '@/lib/promptStorage'
 import Button from '@/components/ui/Button'
@@ -13,11 +13,16 @@ export default function PromptsPage() {
   const [isCreating, setIsCreating] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<SavedPrompt | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  const loadPrompts = useCallback(async () => {
+    const data = await getAllPrompts()
+    setPrompts(data)
+  }, [])
 
   useEffect(() => {
-    setPrompts(getAllPrompts())
-    setMounted(true)
-  }, [])
+    loadPrompts().then(() => setMounted(true))
+  }, [loadPrompts])
 
   if (!mounted) return null
 
@@ -40,29 +45,40 @@ export default function PromptsPage() {
     setEditingId(null)
   }
 
-  const handleSave = () => {
-    if (!editTitle.trim() || !editContent.trim()) return
-    savePrompt({
-      id: editingId || undefined,
-      title: editTitle.trim(),
-      content: editContent.trim(),
-    })
-    setPrompts(getAllPrompts())
-    setIsCreating(false)
-    setEditingId(null)
+  const handleSave = async () => {
+    if (!editTitle.trim() || !editContent.trim() || saving) return
+    setSaving(true)
+    try {
+      await savePrompt({
+        id: editingId || undefined,
+        title: editTitle.trim(),
+        content: editContent.trim(),
+      })
+      await loadPrompts()
+      setIsCreating(false)
+      setEditingId(null)
+    } catch {
+      /* toast could be added later */
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleRequestDelete = (p: SavedPrompt) => {
     setDeleteTarget(p)
   }
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!deleteTarget) return
-    deletePrompt(deleteTarget.id)
-    setPrompts(getAllPrompts())
-    if (editingId === deleteTarget.id) {
-      setEditingId(null)
-      setIsCreating(false)
+    try {
+      await deletePrompt(deleteTarget.id)
+      await loadPrompts()
+      if (editingId === deleteTarget.id) {
+        setEditingId(null)
+        setIsCreating(false)
+      }
+    } catch {
+      /* toast could be added later */
     }
     setDeleteTarget(null)
   }
@@ -128,11 +144,11 @@ export default function PromptsPage() {
               <Button variant="ghost" onClick={handleCancel}>キャンセル</Button>
               <Button
                 variant="primary"
-                disabled={!editTitle.trim() || !editContent.trim()}
+                disabled={!editTitle.trim() || !editContent.trim() || saving}
                 onClick={handleSave}
               >
                 <Check size={18} className="mr-2" />
-                保存する
+                {saving ? '保存中...' : '保存する'}
               </Button>
             </div>
           </div>
