@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { ArticleData, Step } from '@/lib/types'
 import { SavedPrompt, getAllPrompts } from '@/lib/promptStorage'
 import { SavedKeyword, getAllKeywords } from '@/lib/keywordStorage'
 import StepIndicator from './StepIndicator'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
-import { ArrowRight, Trash2, Sparkles, ChevronDown, Check } from 'lucide-react'
+import { ArrowRight, Trash2, Sparkles, ChevronDown, Check, Target } from 'lucide-react'
 
 interface ArticleInputProps {
   article: ArticleData
@@ -29,6 +30,7 @@ export default function ArticleInput({
   onClear,
   onStepClick,
 }: ArticleInputProps) {
+  const searchParams = useSearchParams()
   const [prompt, setPrompt] = useState('')
   const [generating, setGenerating] = useState(false)
   const [generatingStep, setGeneratingStep] = useState<string>('loading')
@@ -37,6 +39,7 @@ export default function ArticleInput({
   const [savedKeywords, setSavedKeywords] = useState<SavedKeyword[]>([])
   const [showPromptDropdown, setShowPromptDropdown] = useState(false)
   const [showKeywordDropdown, setShowKeywordDropdown] = useState(false)
+  const [fromAhrefs, setFromAhrefs] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const keywordDropdownRef = useRef<HTMLDivElement>(null)
 
@@ -49,6 +52,14 @@ export default function ArticleInput({
   useEffect(() => {
     reloadLibraries()
   }, [reloadLibraries])
+
+  useEffect(() => {
+    if (searchParams.get('fromAhrefs') === 'true') {
+      const ahrefsPrompt = searchParams.get('prompt')
+      if (ahrefsPrompt) setPrompt(ahrefsPrompt)
+      setFromAhrefs(true)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     const onVisible = () => {
@@ -165,7 +176,14 @@ export default function ArticleInput({
 
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h2 className="text-base font-bold text-[#1A1A2E] mb-0.5">一次執筆</h2>
+                <h2 className="text-base font-bold text-[#1A1A2E] mb-0.5">
+                  一次執筆
+                  {fromAhrefs && (
+                    <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-[#33B5E5]/10 text-[#33B5E5]">
+                      <Target size={11} /> Ahrefsデータに基づく推奨テーマ
+                    </span>
+                  )}
+                </h2>
                 <p className="text-sm text-[#64748B]">
                   プロンプトで指示を出し、Geminiが記事のタイトル・本文を生成します。
                 </p>

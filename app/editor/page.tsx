@@ -138,6 +138,17 @@ function EditorContent() {
       }
     }
 
+    // Ahrefsダッシュボードからの遷移: KW+プロンプトをプリセット
+    const fromAhrefs = searchParams.get('fromAhrefs')
+    const ahrefsKw = searchParams.get('targetKeyword')
+    const ahrefsPrompt = searchParams.get('prompt')
+    if (fromAhrefs === 'true' && ahrefsKw) {
+      clearState()
+      setArticle({ ...initialArticle, targetKeyword: ahrefsKw })
+      setMounted(true)
+      return
+    }
+
     const saved = loadState()
     if (saved) {
       setArticle({

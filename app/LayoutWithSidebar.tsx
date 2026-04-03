@@ -44,6 +44,7 @@ export default function LayoutWithSidebar({
                 { href: '/articles', label: '保存済み記事一覧' },
                 { href: '/published', label: '過去投稿済み記事一覧' },
                 { href: '/schedule', label: '投稿スケジュール' },
+                { href: '/ahrefs', label: 'KW分析' },
                 { href: '/prompts', label: 'プロンプト' },
                 { href: '/keywords', label: 'キーワード' },
                 { href: '/notice', label: '注意書き' },
