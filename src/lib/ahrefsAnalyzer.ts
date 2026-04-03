@@ -22,6 +22,8 @@ const CATEGORY_RULES: { category: string; patterns: string[] }[] = [
   { category: '評価・制度', patterns: ['評価', '人事制度', '目標管理', 'mbo', 'okr', '人事評価'] },
   { category: 'DX・IT', patterns: ['dx', 'デジタル', 'it', 'rpa', 'erp'] },
   { category: 'コンプライアンス', patterns: ['コンプライアンス', 'ハラスメント', 'パワハラ', 'セクハラ'] },
+  { category: 'エンゲージメント', patterns: ['エンゲージメント', 'モチベーション', '従業員満足', '離職', 'リテンション'] },
+  { category: 'OJT', patterns: ['ojt', '実地訓練', '職場内訓練'] },
 ]
 
 export function classifyCategory(keyword: string): string {
@@ -41,8 +43,12 @@ export function calculateOpportunityScore(row: AhrefsKeywordRow): number {
   return Math.max(0, Math.round(volumeScore - kdPenalty + cpcBonus))
 }
 
-export function analyzeKeywords(keywords: AhrefsKeywordRow[]): ScoredKeyword[] {
-  return keywords
+export function analyzeKeywords(keywords: AhrefsKeywordRow[], excludeBranded = true): ScoredKeyword[] {
+  let filtered = keywords
+  if (excludeBranded) {
+    filtered = keywords.filter(kw => !kw.branded)
+  }
+  return filtered
     .map(kw => ({
       ...kw,
       score: calculateOpportunityScore(kw),

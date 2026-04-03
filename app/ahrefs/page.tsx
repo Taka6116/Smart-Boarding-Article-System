@@ -2,19 +2,20 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { Upload, Trash2, X, TrendingUp, Target, ArrowRight, Search, ChevronDown, Sparkles } from 'lucide-react'
+import { Upload, Trash2, X, TrendingUp, Target, ArrowRight, Search, ChevronDown, Sparkles, Globe } from 'lucide-react'
 import Button from '@/components/ui/Button'
-import type { AhrefsKeywordRow, AhrefsDataset } from '@/lib/ahrefsCsvParser'
+import type { AhrefsKeywordRow, AhrefsDataset, AhrefsDatasetType } from '@/lib/ahrefsCsvParser'
 import { analyzeKeywords, detectTrends, getCategories, type ScoredKeyword, type TrendKeyword } from '@/lib/ahrefsAnalyzer'
 
-type SortKey = 'score' | 'volume' | 'kd' | 'cpc' | 'keyword'
-type Tab = 'opportunities' | 'trends' | 'all'
+type SortKey = 'score' | 'volume' | 'kd' | 'cpc' | 'keyword' | 'position' | 'trafficChange'
+type Tab = 'opportunities' | 'trends' | 'all' | 'organic'
 
 export default function AhrefsPage() {
   const router = useRouter()
-  const [datasets, setDatasets] = useState<Omit<AhrefsDataset, 'keywords'>[]>([])
-  const [allKeywords, setAllKeywords] = useState<AhrefsKeywordRow[]>([])
-  const [prevKeywords, setPrevKeywords] = useState<AhrefsKeywordRow[]>([])
+  const [datasets, setDatasets] = useState<(Omit<AhrefsDataset, 'keywords'> & { type: AhrefsDatasetType })[]>([])
+  const [kwData, setKwData] = useState<AhrefsKeywordRow[]>([])
+  const [organicData, setOrganicData] = useState<AhrefsKeywordRow[]>([])
+  const [prevKwData, setPrevKwData] = useState<AhrefsKeywordRow[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -27,7 +28,6 @@ export default function AhrefsPage() {
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [showCount, setShowCount] = useState(50)
-
   const [suggestingKw, setSuggestingKw] = useState<string | null>(null)
 
   const fetchData = useCallback(async () => {
@@ -37,20 +37,22 @@ export default function AhrefsPage() {
       const res = await fetch('/api/ahrefs')
       if (!res.ok) throw new Error('データの取得に失敗しました')
       const data = await res.json()
-      setDatasets(data.datasets ?? [])
 
+      const dsMeta: (Omit<AhrefsDataset, 'keywords'> & { type: AhrefsDatasetType })[] = []
       const full: AhrefsDataset[] = data.full ?? []
-      if (full.length > 0) {
-        setAllKeywords(full[0].keywords)
-        if (full.length > 1) {
-          setPrevKeywords(full[1].keywords)
-        } else {
-          setPrevKeywords([])
-        }
-      } else {
-        setAllKeywords([])
-        setPrevKeywords([])
+
+      for (const ds of full) {
+        dsMeta.push({ id: ds.id, uploadedAt: ds.uploadedAt, fileName: ds.fileName, rowCount: ds.rowCount, type: ds.type ?? 'keywords' })
       }
+      dsMeta.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())
+      setDatasets(dsMeta)
+
+      const kwSets = full.filter((d: AhrefsDataset) => (d.type ?? 'keywords') === 'keywords')
+      const orgSets = full.filter((d: AhrefsDataset) => d.type === 'organic')
+
+      setKwData(kwSets[0]?.keywords ?? [])
+      setPrevKwData(kwSets[1]?.keywords ?? [])
+      setOrganicData(orgSets[0]?.keywords ?? [])
     } catch (e) {
       setError(e instanceof Error ? e.message : 'エラーが発生しました')
     } finally {
@@ -98,12 +100,18 @@ export default function AhrefsPage() {
     setDeleteTarget(null)
   }, [fetchData])
 
-  const scored = useMemo(() => analyzeKeywords(allKeywords), [allKeywords])
-  const trends = useMemo(() => detectTrends(allKeywords, prevKeywords), [allKeywords, prevKeywords])
-  const categories = useMemo(() => getCategories(scored), [scored])
+  const scored = useMemo(() => analyzeKeywords(kwData), [kwData])
+  const scoredOrganic = useMemo(() => analyzeKeywords(organicData, true), [organicData])
+  const trends = useMemo(() => detectTrends(kwData, prevKwData), [kwData, prevKwData])
+  const categories = useMemo(() => {
+    const src = tab === 'organic' ? scoredOrganic : scored
+    return getCategories(src)
+  }, [scored, scoredOrganic, tab])
+
+  const activeData = tab === 'organic' ? scoredOrganic : scored
 
   const filtered = useMemo(() => {
-    let list = scored
+    let list = activeData
     if (filterCategory !== 'all') {
       list = list.filter(k => k.category === filterCategory)
     }
@@ -111,30 +119,28 @@ export default function AhrefsPage() {
       const q = searchQuery.toLowerCase()
       list = list.filter(k => k.keyword.toLowerCase().includes(q))
     }
+    const key = sortKey as keyof ScoredKeyword
     list = [...list].sort((a, b) => {
-      const aVal = a[sortKey]
-      const bVal = b[sortKey]
+      const aVal = a[key] ?? 0
+      const bVal = b[key] ?? 0
       if (typeof aVal === 'string' && typeof bVal === 'string') {
         return sortAsc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal)
       }
       return sortAsc ? (aVal as number) - (bVal as number) : (bVal as number) - (aVal as number)
     })
     return list
-  }, [scored, filterCategory, searchQuery, sortKey, sortAsc])
+  }, [activeData, filterCategory, searchQuery, sortKey, sortAsc])
 
   const handleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setSortAsc(!sortAsc)
-    } else {
-      setSortKey(key)
-      setSortAsc(false)
-    }
+    if (sortKey === key) setSortAsc(!sortAsc)
+    else { setSortKey(key); setSortAsc(false) }
   }
 
   const handleCreateArticle = useCallback(async (kw: ScoredKeyword) => {
     setSuggestingKw(kw.keyword)
     try {
-      const sameCategory = scored
+      const pool = tab === 'organic' ? scoredOrganic : scored
+      const sameCategory = pool
         .filter(k => k.category === kw.category && k.keyword !== kw.keyword)
         .slice(0, 5)
         .map(k => k.keyword)
@@ -163,12 +169,16 @@ export default function AhrefsPage() {
       setError(e instanceof Error ? e.message : 'プロンプト生成に失敗しました')
       setSuggestingKw(null)
     }
-  }, [scored, router])
+  }, [scored, scoredOrganic, tab, router])
 
   const SortIcon = ({ field }: { field: SortKey }) => {
     if (sortKey !== field) return <ChevronDown size={12} className="opacity-30" />
     return <ChevronDown size={12} className={`transition-transform ${sortAsc ? 'rotate-180' : ''}`} />
   }
+
+  const hasOrganic = organicData.length > 0
+  const hasKw = kwData.length > 0
+  const hasData = hasKw || hasOrganic
 
   return (
     <div className="w-full py-8 max-w-6xl mx-auto">
@@ -201,15 +211,13 @@ export default function AhrefsPage() {
         <p className="mt-2 text-sm font-medium text-[#1A1A2E]">
           {uploading ? 'アップロード中...' : 'AhrefsのCSVをドラッグ＆ドロップ、またはクリック'}
         </p>
-        <p className="mt-1 text-xs text-[#64748B]">Keywords Explorer からエクスポートしたCSV</p>
+        <p className="mt-1 text-xs text-[#64748B]">Keywords Explorer / Site Explorer (Organic Keywords) のCSV対応</p>
       </div>
 
       {error && (
         <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
           {error}
-          <button onClick={() => setError(null)} className="ml-2 text-red-600 hover:text-red-800">
-            <X size={14} />
-          </button>
+          <button onClick={() => setError(null)} className="ml-2 text-red-600 hover:text-red-800"><X size={14} /></button>
         </div>
       )}
 
@@ -218,13 +226,15 @@ export default function AhrefsPage() {
         <div className="mb-6 flex flex-wrap gap-2">
           {datasets.map(ds => (
             <div key={ds.id} className="inline-flex items-center gap-2 bg-white border border-[#E2E8F0] rounded-lg px-3 py-1.5 text-xs">
-              <span className="font-medium text-[#1A1A2E]">{ds.fileName}</span>
-              <span className="text-[#64748B]">{ds.rowCount}件</span>
+              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                ds.type === 'organic' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+              }`}>
+                {ds.type === 'organic' ? '競合' : 'KW'}
+              </span>
+              <span className="font-medium text-[#1A1A2E] max-w-[200px] truncate">{ds.fileName}</span>
+              <span className="text-[#64748B]">{ds.rowCount.toLocaleString()}件</span>
               <span className="text-[#94A3B8]">{new Date(ds.uploadedAt).toLocaleDateString('ja-JP')}</span>
-              <button
-                onClick={() => setDeleteTarget(ds.id)}
-                className="text-[#94A3B8] hover:text-red-500 transition-colors"
-              >
+              <button onClick={() => setDeleteTarget(ds.id)} className="text-[#94A3B8] hover:text-red-500 transition-colors">
                 <Trash2 size={12} />
               </button>
             </div>
@@ -234,25 +244,25 @@ export default function AhrefsPage() {
 
       {loading ? (
         <div className="bg-white rounded-xl border border-[#E2E8F0] p-12 text-center text-[#64748B]">読み込み中...</div>
-      ) : allKeywords.length === 0 ? (
+      ) : !hasData ? (
         <div className="bg-white rounded-xl border border-[#E2E8F0] p-12 text-center text-[#64748B]">
           AhrefsのCSVをアップロードしてください。
         </div>
       ) : (
         <>
           {/* Stats */}
-          <div className="grid grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white rounded-xl border border-[#E2E8F0] p-4">
-              <p className="text-xs text-[#64748B] mb-1">総キーワード数</p>
-              <p className="text-2xl font-bold text-[#1A1A2E]">{allKeywords.length.toLocaleString()}</p>
+              <p className="text-xs text-[#64748B] mb-1">KW調査</p>
+              <p className="text-2xl font-bold text-[#1A1A2E]">{kwData.length.toLocaleString()}</p>
             </div>
             <div className="bg-white rounded-xl border border-[#E2E8F0] p-4">
               <p className="text-xs text-[#64748B] mb-1">狙い目（スコア50+）</p>
               <p className="text-2xl font-bold text-[#33B5E5]">{scored.filter(k => k.score >= 50).length}</p>
             </div>
             <div className="bg-white rounded-xl border border-[#E2E8F0] p-4">
-              <p className="text-xs text-[#64748B] mb-1">低競合（KD≤20）</p>
-              <p className="text-2xl font-bold text-green-600">{scored.filter(k => k.kd <= 20).length}</p>
+              <p className="text-xs text-[#64748B] mb-1">競合KW</p>
+              <p className="text-2xl font-bold text-purple-600">{organicData.filter(k => !k.branded).length.toLocaleString()}</p>
             </div>
             <div className="bg-white rounded-xl border border-[#E2E8F0] p-4">
               <p className="text-xs text-[#64748B] mb-1">トレンドKW</p>
@@ -265,21 +275,17 @@ export default function AhrefsPage() {
             <button
               onClick={() => setFilterCategory('all')}
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                filterCategory === 'all'
-                  ? 'bg-[#33B5E5] text-white'
-                  : 'bg-white border border-[#E2E8F0] text-[#64748B] hover:border-[#33B5E5]'
+                filterCategory === 'all' ? 'bg-[#33B5E5] text-white' : 'bg-white border border-[#E2E8F0] text-[#64748B] hover:border-[#33B5E5]'
               }`}
             >
-              すべて ({scored.length})
+              すべて ({activeData.length})
             </button>
             {categories.map(c => (
               <button
                 key={c.category}
                 onClick={() => setFilterCategory(c.category)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  filterCategory === c.category
-                    ? 'bg-[#33B5E5] text-white'
-                    : 'bg-white border border-[#E2E8F0] text-[#64748B] hover:border-[#33B5E5]'
+                  filterCategory === c.category ? 'bg-[#33B5E5] text-white' : 'bg-white border border-[#E2E8F0] text-[#64748B] hover:border-[#33B5E5]'
                 }`}
               >
                 {c.category} ({c.count})
@@ -290,13 +296,14 @@ export default function AhrefsPage() {
           {/* Tabs */}
           <div className="flex gap-1 mb-4 bg-[#F1F5F9] rounded-lg p-1 w-fit">
             {([
-              { key: 'opportunities' as Tab, label: '狙い目KW', icon: Target },
-              { key: 'trends' as Tab, label: 'トレンド', icon: TrendingUp },
-              { key: 'all' as Tab, label: '全データ', icon: Search },
-            ]).map(t => (
+              { key: 'opportunities' as Tab, label: '狙い目KW', icon: Target, show: hasKw },
+              { key: 'organic' as Tab, label: '競合KW', icon: Globe, show: hasOrganic },
+              { key: 'trends' as Tab, label: 'トレンド', icon: TrendingUp, show: hasKw },
+              { key: 'all' as Tab, label: '全データ', icon: Search, show: hasKw },
+            ]).filter(t => t.show).map(t => (
               <button
                 key={t.key}
-                onClick={() => setTab(t.key)}
+                onClick={() => { setTab(t.key); setFilterCategory('all'); setShowCount(50) }}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                   tab === t.key ? 'bg-white text-[#1A1A2E] shadow-sm' : 'text-[#64748B] hover:text-[#1A1A2E]'
                 }`}
@@ -324,8 +331,8 @@ export default function AhrefsPage() {
             <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden">
               {trends.length === 0 ? (
                 <div className="p-8 text-center text-sm text-[#64748B]">
-                  {prevKeywords.length === 0
-                    ? '前回データがありません。2回目以降のアップロードでトレンドが表示されます。'
+                  {prevKwData.length === 0
+                    ? '前回データがありません。2回目以降のKW調査CSVアップロードでトレンドが表示されます。'
                     : '大きな変動のあるキーワードはありません。'}
                 </div>
               ) : (
@@ -347,22 +354,28 @@ export default function AhrefsPage() {
                         <td className="py-3 px-4 text-right text-[#1A1A2E] font-medium">{t.currentVolume.toLocaleString()}</td>
                         <td className="py-3 px-4 text-right font-bold text-green-600">+{t.changeRate}%</td>
                         <td className="py-3 px-4 text-center">
-                          {t.isNew ? (
-                            <span className="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700 font-medium">NEW</span>
-                          ) : (
-                            <span className="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700 font-medium">上昇</span>
-                          )}
+                          {t.isNew
+                            ? <span className="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700 font-medium">NEW</span>
+                            : <span className="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700 font-medium">上昇</span>
+                          }
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               )}
+              {trends.length > showCount && (
+                <div className="p-4 text-center border-t border-[#E2E8F0]">
+                  <button onClick={() => setShowCount(p => p + 50)} className="text-sm text-[#33B5E5] hover:text-[#2AA3D0] font-medium">
+                    さらに表示（残り {trends.length - showCount} 件）
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Opportunities / All Tab */}
-          {(tab === 'opportunities' || tab === 'all') && (
+          {/* Table: opportunities / all / organic */}
+          {(tab === 'opportunities' || tab === 'all' || tab === 'organic') && (
             <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -383,14 +396,29 @@ export default function AhrefsPage() {
                       <th className="text-right py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('score')}>
                         <span className="inline-flex items-center gap-1 justify-end">スコア <SortIcon field="score" /></span>
                       </th>
+                      {tab === 'organic' && (
+                        <>
+                          <th className="text-right py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('position')}>
+                            <span className="inline-flex items-center gap-1 justify-end">順位 <SortIcon field="position" /></span>
+                          </th>
+                          <th className="text-right py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('trafficChange')}>
+                            <span className="inline-flex items-center gap-1 justify-end">流入変動 <SortIcon field="trafficChange" /></span>
+                          </th>
+                        </>
+                      )}
                       <th className="text-center py-3 px-4 font-semibold text-[#64748B]">カテゴリ</th>
                       <th className="text-center py-3 px-4 font-semibold text-[#64748B] w-28">アクション</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.slice(0, showCount).map(kw => (
-                      <tr key={kw.keyword} className="border-b border-[#E2E8F0] hover:bg-[#F8FAFC]/50">
-                        <td className="py-3 px-4 font-medium text-[#1A1A2E]">{kw.keyword}</td>
+                    {filtered.slice(0, showCount).map((kw, i) => (
+                      <tr key={`${kw.keyword}-${i}`} className="border-b border-[#E2E8F0] hover:bg-[#F8FAFC]/50">
+                        <td className="py-3 px-4 font-medium text-[#1A1A2E] max-w-[260px]">
+                          <span className="block truncate">{kw.keyword}</span>
+                          {tab === 'organic' && kw.url && (
+                            <span className="block text-[10px] text-[#94A3B8] truncate mt-0.5">{kw.url}</span>
+                          )}
+                        </td>
                         <td className="py-3 px-4 text-right text-[#1A1A2E]">{kw.volume.toLocaleString()}</td>
                         <td className="py-3 px-4 text-right">
                           <span className={`font-medium ${kw.kd <= 20 ? 'text-green-600' : kw.kd <= 50 ? 'text-orange-500' : 'text-red-500'}`}>
@@ -403,6 +431,18 @@ export default function AhrefsPage() {
                             {kw.score}
                           </span>
                         </td>
+                        {tab === 'organic' && (
+                          <>
+                            <td className="py-3 px-4 text-right text-[#1A1A2E] font-medium">{kw.position ?? '-'}</td>
+                            <td className="py-3 px-4 text-right">
+                              {kw.trafficChange != null ? (
+                                <span className={kw.trafficChange > 0 ? 'text-green-600 font-medium' : kw.trafficChange < 0 ? 'text-red-500 font-medium' : 'text-[#64748B]'}>
+                                  {kw.trafficChange > 0 ? '+' : ''}{kw.trafficChange.toLocaleString()}
+                                </span>
+                              ) : '-'}
+                            </td>
+                          </>
+                        )}
                         <td className="py-3 px-4 text-center">
                           <span className="px-2 py-0.5 rounded-full text-xs bg-[#F1F5F9] text-[#64748B] font-medium">
                             {kw.category}
@@ -428,20 +468,20 @@ export default function AhrefsPage() {
               </div>
               {filtered.length > showCount && (
                 <div className="p-4 text-center border-t border-[#E2E8F0]">
-                  <button
-                    onClick={() => setShowCount(prev => prev + 50)}
-                    className="text-sm text-[#33B5E5] hover:text-[#2AA3D0] font-medium"
-                  >
+                  <button onClick={() => setShowCount(p => p + 50)} className="text-sm text-[#33B5E5] hover:text-[#2AA3D0] font-medium">
                     さらに表示（残り {filtered.length - showCount} 件）
                   </button>
                 </div>
+              )}
+              {filtered.length === 0 && (
+                <div className="p-8 text-center text-sm text-[#64748B]">条件に一致するキーワードがありません。</div>
               )}
             </div>
           )}
         </>
       )}
 
-      {/* Delete Confirm Modal */}
+      {/* Delete Confirm */}
       {deleteTarget && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-xl max-w-md w-full mx-4 p-6">

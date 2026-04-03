@@ -29,6 +29,7 @@ export async function GET() {
             uploadedAt: ds.uploadedAt,
             fileName: ds.fileName,
             rowCount: ds.rowCount,
+            type: ds.type ?? 'keywords',
           })
         } catch { /* skip */ }
       }
