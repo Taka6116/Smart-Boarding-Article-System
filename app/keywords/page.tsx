@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Plus, Pencil, Trash2, X, Check } from 'lucide-react'
 import { SavedKeyword, getAllKeywords, saveKeyword, deleteKeyword } from '@/lib/keywordStorage'
 import Button from '@/components/ui/Button'
@@ -13,11 +13,16 @@ export default function KeywordsPage() {
   const [isCreating, setIsCreating] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<SavedKeyword | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  const loadKeywords = useCallback(async () => {
+    const data = await getAllKeywords()
+    setKeywords(data)
+  }, [])
 
   useEffect(() => {
-    setKeywords(getAllKeywords())
-    setMounted(true)
-  }, [])
+    loadKeywords().then(() => setMounted(true))
+  }, [loadKeywords])
 
   if (!mounted) return null
 
@@ -40,29 +45,40 @@ export default function KeywordsPage() {
     setEditingId(null)
   }
 
-  const handleSave = () => {
-    if (!editTitle.trim() || !editContent.trim()) return
-    saveKeyword({
-      id: editingId || undefined,
-      title: editTitle.trim(),
-      content: editContent.trim(),
-    })
-    setKeywords(getAllKeywords())
-    setIsCreating(false)
-    setEditingId(null)
+  const handleSave = async () => {
+    if (!editTitle.trim() || !editContent.trim() || saving) return
+    setSaving(true)
+    try {
+      await saveKeyword({
+        id: editingId || undefined,
+        title: editTitle.trim(),
+        content: editContent.trim(),
+      })
+      await loadKeywords()
+      setIsCreating(false)
+      setEditingId(null)
+    } catch {
+      /* toast could be added later */
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleRequestDelete = (k: SavedKeyword) => {
     setDeleteTarget(k)
   }
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!deleteTarget) return
-    deleteKeyword(deleteTarget.id)
-    setKeywords(getAllKeywords())
-    if (editingId === deleteTarget.id) {
-      setEditingId(null)
-      setIsCreating(false)
+    try {
+      await deleteKeyword(deleteTarget.id)
+      await loadKeywords()
+      if (editingId === deleteTarget.id) {
+        setEditingId(null)
+        setIsCreating(false)
+      }
+    } catch {
+      /* toast could be added later */
     }
     setDeleteTarget(null)
   }
@@ -128,9 +144,9 @@ export default function KeywordsPage() {
               <Button variant="ghost" onClick={handleCancel}>
                 キャンセル
               </Button>
-              <Button variant="primary" disabled={!editTitle.trim() || !editContent.trim()} onClick={handleSave}>
+              <Button variant="primary" disabled={!editTitle.trim() || !editContent.trim() || saving} onClick={handleSave}>
                 <Check size={18} className="mr-2" />
-                保存する
+                {saving ? '保存中...' : '保存する'}
               </Button>
             </div>
           </div>

@@ -1,5 +1,3 @@
-'use client'
-
 export interface SavedKeyword {
   id: string
   title: string
@@ -8,52 +6,57 @@ export interface SavedKeyword {
   updatedAt: string
 }
 
-const KEYWORDS_STORAGE_KEY = 'nas_user_keywords'
-
-export function getAllKeywords(): SavedKeyword[] {
-  if (typeof window === 'undefined') return []
+export async function getAllKeywords(): Promise<SavedKeyword[]> {
   try {
-    const data = localStorage.getItem(KEYWORDS_STORAGE_KEY)
-    return data ? JSON.parse(data) : []
+    const res = await fetch('/api/keywords')
+    if (!res.ok) return []
+    const data = await res.json()
+    return data.keywords ?? []
   } catch {
     return []
   }
 }
 
-export function saveKeyword(
+export async function saveKeyword(
   keyword: Omit<SavedKeyword, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }
-): SavedKeyword {
-  const keywords = getAllKeywords()
+): Promise<SavedKeyword> {
   const now = new Date().toISOString()
-
-  if (keyword.id) {
-    const index = keywords.findIndex(k => k.id === keyword.id)
-    if (index >= 0) {
-      keywords[index] = {
-        ...keywords[index],
-        title: keyword.title,
-        content: keyword.content,
-        updatedAt: now,
-      }
-      localStorage.setItem(KEYWORDS_STORAGE_KEY, JSON.stringify(keywords))
-      return keywords[index]!
-    }
-  }
-
-  const newKeyword: SavedKeyword = {
-    id: String(Date.now()),
+  const saved: SavedKeyword = {
+    id: keyword.id || String(Date.now()),
     title: keyword.title,
     content: keyword.content,
     createdAt: now,
     updatedAt: now,
   }
-  keywords.push(newKeyword)
-  localStorage.setItem(KEYWORDS_STORAGE_KEY, JSON.stringify(keywords))
-  return newKeyword
+
+  if (keyword.id) {
+    const existing = await getAllKeywords()
+    const prev = existing.find(k => k.id === keyword.id)
+    if (prev) {
+      saved.createdAt = prev.createdAt
+    }
+  }
+
+  const res = await fetch('/api/keywords', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(saved),
+  })
+
+  if (!res.ok) {
+    throw new Error('キーワードの保存に失敗しました')
+  }
+  return saved
 }
 
-export function deleteKeyword(id: string): void {
-  const keywords = getAllKeywords()
-  const filtered = keywords.filter(k => k.id !== id)
-  localStorage.setItem(KEYWORDS_STORAGE_KEY, JSON.stringify(filtered))
+export async function deleteKeyword(id: string): Promise<void> {
+  const res = await fetch('/api/keywords', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id }),
+  })
+
+  if (!res.ok) {
+    throw new Error('キーワードの削除に失敗しました')
+  }
 }
