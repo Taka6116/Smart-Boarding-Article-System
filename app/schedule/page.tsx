@@ -235,6 +235,9 @@ export default function SchedulePage() {
           if (typeof data.status === 'string' && data.status) {
             a.wordpressPostStatus = data.status
           }
+          if (typeof data.dateGmt === 'string' && data.dateGmt.trim()) {
+            a.wordpressPublishedAt = data.dateGmt.trim()
+          }
           await saveArticle(a)
           setArticles(await getAllArticles())
         }

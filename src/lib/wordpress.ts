@@ -16,6 +16,8 @@ export interface WordPressPostResult {
   link: string;             // 投稿のURL
   editLink: string;         // 管理画面の編集URL
   status: 'draft' | 'publish' | 'future';
+  /** WordPress REST の date_gmt（UTC ISO 相当の文字列） */
+  dateGmt?: string;
   /** 画像アップロードに失敗した場合の警告メッセージ（投稿自体は成功） */
   imageUploadWarning?: string;
 }
@@ -885,12 +887,25 @@ export async function postToWordPress(
       throw new Error(`WordPress API error: ${response.status} - ${message}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as {
+      id: number;
+      link: string;
+      status: 'draft' | 'publish' | 'future';
+      date_gmt?: string;
+      date?: string;
+    };
+    const dateGmt =
+      typeof data.date_gmt === 'string' && data.date_gmt.trim()
+        ? data.date_gmt.trim()
+        : typeof data.date === 'string' && data.date.trim()
+          ? data.date.trim()
+          : undefined;
     return {
       id: data.id,
       link: data.link,
       editLink: `${wpUrl}/wp-admin/post.php?post=${data.id}&action=edit`,
       status: data.status,
+      ...(dateGmt ? { dateGmt } : {}),
       ...(imageUploadWarning ? { imageUploadWarning } : {}),
     };
   } catch (err) {

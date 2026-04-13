@@ -355,6 +355,8 @@ function EditorContent() {
         refinedContent: article.refinedContent,
         imageUrl: article.imageUrl,
         wordpressUrl: article.wordpressUrl,
+        wordpressPostStatus: existing?.wordpressPostStatus,
+        wordpressPublishedAt: existing?.wordpressPublishedAt,
         status: article.imageUrl ? 'ready' : 'draft',
         createdAt: existing?.createdAt ?? new Date().toISOString(),
         scheduledDate: existing?.scheduledDate,
@@ -470,6 +472,9 @@ function EditorContent() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
+      const publishedAt =
+        typeof data.dateGmt === 'string' && data.dateGmt.trim() ? data.dateGmt.trim() : undefined
+
       updateArticle({
         wordpressUrl: data.wordpressUrl,
         wordpressPostStatus: data.status,
@@ -495,6 +500,7 @@ function EditorContent() {
             status: nextArticleStatus,
             wordpressUrl: data.wordpressUrl,
             wordpressPostStatus: data.status,
+            wordpressPublishedAt: publishedAt ?? existing.wordpressPublishedAt,
             wordpressTags: tags.length ? tags : undefined,
             wordpressCategoryIds: wordpressCategoryIds.length ? wordpressCategoryIds : undefined,
             ...scheduleFields,
@@ -520,6 +526,7 @@ function EditorContent() {
           imageUrl: article.imageUrl,
           wordpressUrl: data.wordpressUrl,
           wordpressPostStatus: data.status,
+          ...(publishedAt ? { wordpressPublishedAt: publishedAt } : {}),
           status: nextArticleStatus,
           createdAt: new Date().toISOString(),
           wordCount: article.refinedContent.length,

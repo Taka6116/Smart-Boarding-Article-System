@@ -56,6 +56,8 @@ export default function PublishedArticlesPage() {
       ...article,
       id: `copy-${Date.now()}`,
       wordpressUrl: undefined,
+      wordpressPostStatus: undefined,
+      wordpressPublishedAt: undefined,
       status: 'draft',
       createdAt: new Date().toISOString(),
       scheduledDate: undefined,

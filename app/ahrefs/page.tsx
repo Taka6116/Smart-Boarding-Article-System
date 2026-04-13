@@ -4,11 +4,27 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Upload, Trash2, X, TrendingUp, Target, ArrowRight, Search, ChevronDown, Globe, FileUp } from 'lucide-react'
 import Button from '@/components/ui/Button'
+import { ColumnHint } from '@/components/ui/ColumnHint'
 import type { AhrefsKeywordRow, AhrefsDataset, AhrefsDatasetType } from '@/lib/ahrefsCsvParser'
-import { analyzeKeywords, detectTrends, getCategories, type ScoredKeyword, type TrendKeyword, type PriorityLevel } from '@/lib/ahrefsAnalyzer'
+import {
+  analyzeKeywords,
+  analyzeOrganicKeywords,
+  detectTrends,
+  getCategories,
+  type ScoredKeyword,
+  type TrendKeyword,
+  type PriorityLevel,
+} from '@/lib/ahrefsAnalyzer'
+import { getAllArticles } from '@/lib/articleStorage'
+import {
+  buildKeywordWpEntriesByKeyword,
+  keywordActionButtonLabel,
+  normalizeKeywordForArticleMatch,
+  type KeywordWpEntry,
+} from '@/lib/keywordPublishIndex'
 
 type SortKey = 'priority' | 'score' | 'volume' | 'kd' | 'cpc' | 'keyword' | 'position' | 'trafficChange'
-type Tab = 'opportunities' | 'trends' | 'all' | 'organic'
+type Tab = 'opportunities' | 'trends' | 'organic'
 
 function PriorityBadge({ level }: { level: PriorityLevel }) {
   if (level === 3) return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500 text-white">★★★</span>
@@ -16,6 +32,30 @@ function PriorityBadge({ level }: { level: PriorityLevel }) {
   if (level === 1) return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">★</span>
   return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs text-gray-300">−</span>
 }
+
+/** Ahrefs の各指標の説明（ホバーでボックス表示） */
+const AHREFS_COLUMN_HINTS = {
+  keyword: 'Ahrefsが分析対象とする検索クエリ（Keywords Explorer / Site Explorer）。',
+  volume: '対象国の月間検索回数の推定（平均）。Keywords Explorer / Site Explorer の指標。',
+  kd: 'そのキーワードで上位10件に入る難しさの目安（0〜100）。上位ページの被リンク等に基づく Ahrefs の推定。',
+  cpc: '有料検索におけるクリック単価の目安（データの通貨に依存）。',
+  priorityKeywords:
+    '狙い目KW＝ボリューム・KD・スコア・トレンドから算出／競合KW＝順位・流入変動・ボリューム中心（KD は使わない）。',
+  priorityOrganic:
+    '狙い目KW＝ボリューム・KD・スコア・トレンドから算出／競合KW＝順位・流入変動・ボリューム中心（KD は使わない）。',
+  scoreKeywords:
+    '狙い目KW＝新規獲得向け機会スコア／競合KW＝順位・流入変動・ボリュームから算出する施策スコア（アプリ内）。',
+  scoreOrganic:
+    '狙い目KW＝新規獲得向け機会スコア／競合KW＝順位・流入変動・ボリュームから算出する施策スコア（アプリ内）。',
+  position: 'オーガニック検索での現在の順位（Site Explorer）。',
+  trafficChange: '推定オーガニックトラフィックの前回比の変化。',
+  category: 'テーマ分類（Ahrefsのカテゴリ列、またはアプリのルールベース分類）。',
+  action: '記事作成画面へ。保存済み記事とKWが一致する場合は公開日などを表示。',
+  trendPrevVol: '前回インポートしたKW調査CSVにおける月間検索ボリューム（Volume）。',
+  trendCurrVol: '最新のKW調査CSVにおける月間検索ボリューム（Volume）。',
+  trendChangeRate: '前回Volに対する今回Volの変化率（％）。本一覧は+20%超の上昇のみ表示。',
+  trendStatus: 'NEW＝前回CSVに無かったキーワード。上昇＝前回比で検索ボリュームが大きく増えたキーワード。',
+} as const
 
 function generateAutoPrompt(row: ScoredKeyword): string {
   const volStrategy = row.volume > 5000
@@ -142,6 +182,16 @@ export default function AhrefsPage() {
   const [filterPriority, setFilterPriority] = useState<'all' | PriorityLevel>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [showCount, setShowCount] = useState(50)
+  const [kwWpEntriesByNorm, setKwWpEntriesByNorm] = useState<Map<string, KeywordWpEntry[]>>(() => new Map())
+
+  const refreshArticleKeywordIndex = useCallback(async () => {
+    try {
+      const articles = await getAllArticles()
+      setKwWpEntriesByNorm(buildKeywordWpEntriesByKeyword(articles))
+    } catch {
+      setKwWpEntriesByNorm(new Map())
+    }
+  }, [])
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -174,6 +224,15 @@ export default function AhrefsPage() {
   }, [])
 
   useEffect(() => { fetchData() }, [fetchData])
+
+  useEffect(() => {
+    refreshArticleKeywordIndex()
+    const onVis = () => {
+      if (document.visibilityState === 'visible') refreshArticleKeywordIndex()
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
+  }, [refreshArticleKeywordIndex])
 
   useEffect(() => {
     setShowCount(50)
@@ -220,7 +279,7 @@ export default function AhrefsPage() {
   }, [fetchData])
 
   const scored = useMemo(() => analyzeKeywords(kwData), [kwData])
-  const scoredOrganic = useMemo(() => analyzeKeywords(organicData, true), [organicData])
+  const scoredOrganic = useMemo(() => analyzeOrganicKeywords(organicData, true), [organicData])
   const trends = useMemo(() => detectTrends(kwData, prevKwData), [kwData, prevKwData])
 
   const activeData = tab === 'organic' ? scoredOrganic : scored
@@ -285,6 +344,9 @@ export default function AhrefsPage() {
     if (kd <= 60) return 'text-yellow-600'
     return 'text-red-500'
   }
+
+  const scoreStrong = isOrganicTab ? 55 : 50
+  const scoreWeak = isOrganicTab ? 32 : 30
 
   return (
     <div
@@ -433,7 +495,6 @@ export default function AhrefsPage() {
               { key: 'opportunities' as Tab, label: '狙い目KW', show: hasKw },
               { key: 'organic' as Tab, label: '競合KW', show: hasOrganic },
               { key: 'trends' as Tab, label: 'トレンド', show: hasKw },
-              { key: 'all' as Tab, label: '全データ', show: hasKw },
             ]).filter(t => t.show).map(t => (
               <button
                 key={t.key}
@@ -474,11 +535,46 @@ export default function AhrefsPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
-                      <th className="text-left py-3 px-4 font-semibold text-[#64748B]">キーワード</th>
-                      <th className="text-right py-3 px-4 font-semibold text-[#64748B]">前回Vol</th>
-                      <th className="text-right py-3 px-4 font-semibold text-[#64748B]">今回Vol</th>
-                      <th className="text-right py-3 px-4 font-semibold text-[#64748B]">変化率</th>
-                      <th className="text-center py-3 px-4 font-semibold text-[#64748B]">状態</th>
+                      <th className="text-left py-3 px-4 font-semibold text-[#64748B]">
+                        <span className="inline-flex items-center gap-1">
+                          キーワード
+                          <span onClick={e => e.stopPropagation()} className="inline-flex">
+                            <ColumnHint text={AHREFS_COLUMN_HINTS.keyword} />
+                          </span>
+                        </span>
+                      </th>
+                      <th className="text-right py-3 px-4 font-semibold text-[#64748B]">
+                        <span className="inline-flex items-center justify-end gap-1 w-full">
+                          前回Vol
+                          <span onClick={e => e.stopPropagation()} className="inline-flex">
+                            <ColumnHint text={AHREFS_COLUMN_HINTS.trendPrevVol} />
+                          </span>
+                        </span>
+                      </th>
+                      <th className="text-right py-3 px-4 font-semibold text-[#64748B]">
+                        <span className="inline-flex items-center justify-end gap-1 w-full">
+                          今回Vol
+                          <span onClick={e => e.stopPropagation()} className="inline-flex">
+                            <ColumnHint text={AHREFS_COLUMN_HINTS.trendCurrVol} />
+                          </span>
+                        </span>
+                      </th>
+                      <th className="text-right py-3 px-4 font-semibold text-[#64748B]">
+                        <span className="inline-flex items-center justify-end gap-1 w-full">
+                          変化率
+                          <span onClick={e => e.stopPropagation()} className="inline-flex">
+                            <ColumnHint text={AHREFS_COLUMN_HINTS.trendChangeRate} />
+                          </span>
+                        </span>
+                      </th>
+                      <th className="text-center py-3 px-4 font-semibold text-[#64748B]">
+                        <span className="inline-flex items-center justify-center gap-1 w-full">
+                          状態
+                          <span onClick={e => e.stopPropagation()} className="inline-flex">
+                            <ColumnHint text={AHREFS_COLUMN_HINTS.trendStatus} />
+                          </span>
+                        </span>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -510,42 +606,96 @@ export default function AhrefsPage() {
           )}
 
           {/* Table: opportunities / all / organic */}
-          {(tab === 'opportunities' || tab === 'all' || tab === 'organic') && (
+          {(tab === 'opportunities' || tab === 'organic') && (
             <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm table-fixed">
                   <thead>
                     <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
                       <th style={{ width: isOrganicTab ? '17%' : '26%' }} className="text-left py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('keyword')}>
-                        <span className="inline-flex items-center gap-1">キーワード <SortIcon field="keyword" /></span>
+                        <span className="inline-flex items-center gap-1 flex-wrap">
+                          <span className="inline-flex items-center gap-1">キーワード <SortIcon field="keyword" /></span>
+                          <span onClick={e => e.stopPropagation()} className="inline-flex">
+                            <ColumnHint text={AHREFS_COLUMN_HINTS.keyword} />
+                          </span>
+                        </span>
                       </th>
                       <th style={{ width: isOrganicTab ? '7%' : '8%' }} className="text-right py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('volume')}>
-                        <span className="inline-flex items-center gap-1 justify-end">Volume <SortIcon field="volume" /></span>
+                        <span className="inline-flex items-center justify-end gap-1 w-full">
+                          <span className="inline-flex items-center gap-1">Volume <SortIcon field="volume" /></span>
+                          <span onClick={e => e.stopPropagation()} className="inline-flex">
+                            <ColumnHint text={AHREFS_COLUMN_HINTS.volume} />
+                          </span>
+                        </span>
                       </th>
                       <th style={{ width: isOrganicTab ? '5%' : '7%' }} className="text-right py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('kd')}>
-                        <span className="inline-flex items-center gap-1 justify-end">KD <SortIcon field="kd" /></span>
+                        <span className="inline-flex items-center justify-end gap-1 w-full">
+                          <span className="inline-flex items-center gap-1">KD <SortIcon field="kd" /></span>
+                          <span onClick={e => e.stopPropagation()} className="inline-flex">
+                            <ColumnHint text={AHREFS_COLUMN_HINTS.kd} />
+                          </span>
+                        </span>
                       </th>
                       <th style={{ width: isOrganicTab ? '6%' : '7%' }} className="text-right py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('cpc')}>
-                        <span className="inline-flex items-center gap-1 justify-end">CPC <SortIcon field="cpc" /></span>
+                        <span className="inline-flex items-center justify-end gap-1 w-full">
+                          <span className="inline-flex items-center gap-1">CPC <SortIcon field="cpc" /></span>
+                          <span onClick={e => e.stopPropagation()} className="inline-flex">
+                            <ColumnHint text={AHREFS_COLUMN_HINTS.cpc} />
+                          </span>
+                        </span>
                       </th>
                       <th style={{ width: '8%' }} className="text-center py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('priority')}>
-                        <span className="inline-flex items-center gap-1 justify-center">優先度 <SortIcon field="priority" /></span>
+                        <span className="inline-flex items-center justify-center gap-1 w-full flex-wrap">
+                          <span className="inline-flex items-center gap-1">優先度 <SortIcon field="priority" /></span>
+                          <span onClick={e => e.stopPropagation()} className="inline-flex">
+                            <ColumnHint text={isOrganicTab ? AHREFS_COLUMN_HINTS.priorityOrganic : AHREFS_COLUMN_HINTS.priorityKeywords} />
+                          </span>
+                        </span>
                       </th>
                       <th style={{ width: isOrganicTab ? '6%' : '7%' }} className="text-right py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('score')}>
-                        <span className="inline-flex items-center gap-1 justify-end">スコア <SortIcon field="score" /></span>
+                        <span className="inline-flex items-center justify-end gap-1 w-full">
+                          <span className="inline-flex items-center gap-1">スコア <SortIcon field="score" /></span>
+                          <span onClick={e => e.stopPropagation()} className="inline-flex">
+                            <ColumnHint text={isOrganicTab ? AHREFS_COLUMN_HINTS.scoreOrganic : AHREFS_COLUMN_HINTS.scoreKeywords} />
+                          </span>
+                        </span>
                       </th>
                       {isOrganicTab && (
                         <>
                           <th style={{ width: '5%' }} className="text-right py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('position')}>
-                            <span className="inline-flex items-center gap-1 justify-end">順位 <SortIcon field="position" /></span>
+                            <span className="inline-flex items-center justify-end gap-1 w-full">
+                              <span className="inline-flex items-center gap-1">順位 <SortIcon field="position" /></span>
+                              <span onClick={e => e.stopPropagation()} className="inline-flex">
+                                <ColumnHint text={AHREFS_COLUMN_HINTS.position} />
+                              </span>
+                            </span>
                           </th>
                           <th style={{ width: '7%' }} className="text-right py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('trafficChange')}>
-                            <span className="inline-flex items-center gap-1 justify-end">流入変動 <SortIcon field="trafficChange" /></span>
+                            <span className="inline-flex items-center justify-end gap-1 w-full">
+                              <span className="inline-flex items-center gap-1">流入変動 <SortIcon field="trafficChange" /></span>
+                              <span onClick={e => e.stopPropagation()} className="inline-flex">
+                                <ColumnHint text={AHREFS_COLUMN_HINTS.trafficChange} />
+                              </span>
+                            </span>
                           </th>
                         </>
                       )}
-                      <th style={{ width: isOrganicTab ? '9%' : '12%' }} className="text-center py-3 px-4 font-semibold text-[#64748B]">カテゴリ</th>
-                      <th style={{ width: isOrganicTab ? '12%' : '12%' }} className="text-center py-3 px-4 font-semibold text-[#64748B]">アクション</th>
+                      <th style={{ width: isOrganicTab ? '9%' : '12%' }} className="text-center py-3 px-4 font-semibold text-[#64748B]">
+                        <span className="inline-flex items-center justify-center gap-1 w-full">
+                          カテゴリ
+                          <span onClick={e => e.stopPropagation()} className="inline-flex">
+                            <ColumnHint text={AHREFS_COLUMN_HINTS.category} />
+                          </span>
+                        </span>
+                      </th>
+                      <th style={{ width: isOrganicTab ? '12%' : '12%' }} className="text-center py-3 px-4 font-semibold text-[#64748B]">
+                        <span className="inline-flex items-center justify-center gap-1 w-full">
+                          アクション
+                          <span onClick={e => e.stopPropagation()} className="inline-flex">
+                            <ColumnHint text={AHREFS_COLUMN_HINTS.action} />
+                          </span>
+                        </span>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -564,7 +714,7 @@ export default function AhrefsPage() {
                         <td className="py-3 px-4 text-right text-[#64748B]">{kw.cpc > 0 ? `¥${kw.cpc}` : '-'}</td>
                         <td className="py-3 px-4 text-center"><PriorityBadge level={kw.priority} /></td>
                         <td className="py-3 px-4 text-right">
-                          <span className={`font-bold ${kw.score >= 50 ? 'text-[#009AE0]' : kw.score >= 30 ? 'text-[#1A1A2E]' : 'text-[#94A3B8]'}`}>
+                          <span className={`font-bold ${kw.score >= scoreStrong ? 'text-[#009AE0]' : kw.score >= scoreWeak ? 'text-[#1A1A2E]' : 'text-[#94A3B8]'}`}>
                             {kw.score}
                           </span>
                         </td>
@@ -586,16 +736,38 @@ export default function AhrefsPage() {
                           </span>
                         </td>
                         <td className="py-3 px-4 text-center">
-                          <button
-                            onClick={() => handleCreateArticle(kw)}
-                            className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-white whitespace-nowrap transition-colors ${
-                              kw.priority === 3
-                                ? 'bg-[#E67E22] hover:bg-[#D35400]'
-                                : 'bg-[#009AE0] hover:bg-[#0088C6]'
-                            }`}
-                          >
-                            <ArrowRight size={12} /> 記事作成
-                          </button>
+                          {(() => {
+                            const wpEntries = kwWpEntriesByNorm.get(normalizeKeywordForArticleMatch(kw.keyword))
+                            const { line, tooltip } = keywordActionButtonLabel(wpEntries)
+                            const hasWp = Boolean(line)
+                            return (
+                              <button
+                                type="button"
+                                title={tooltip || undefined}
+                                onClick={() => handleCreateArticle(kw)}
+                                className={`inline-flex flex-col items-center justify-center gap-0.5 min-w-[7.5rem] px-2 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+                                  hasWp
+                                    ? 'bg-[#E8F6FC] text-[#0369A1] border border-[#BAE6FD] hover:bg-[#D2EEF9]'
+                                    : kw.priority === 3
+                                      ? 'bg-[#E67E22] hover:bg-[#D35400] text-white'
+                                      : 'bg-[#009AE0] hover:bg-[#0088C6] text-white'
+                                }`}
+                              >
+                                {hasWp ? (
+                                  <>
+                                    <span className="leading-tight text-[11px] font-semibold">{line}</span>
+                                    <span className="inline-flex items-center gap-0.5 text-[10px] font-medium opacity-90">
+                                      <ArrowRight size={10} /> 記事作成
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1">
+                                    <ArrowRight size={12} /> 記事作成
+                                  </span>
+                                )}
+                              </button>
+                            )
+                          })()}
                         </td>
                       </tr>
                     ))}
