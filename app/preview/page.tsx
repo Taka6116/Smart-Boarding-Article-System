@@ -5,8 +5,35 @@ import { useCallback, useMemo, useState, useEffect, Suspense } from 'react'
 import StepIndicator from '@/components/editor/StepIndicator'
 import type { Step } from '@/lib/types'
 
+/** 行頭の全角数字番号を半角に直し、全角句点を半角に寄せる（見出し判定の取りこぼし防止） */
+function normalizeNumberedHeadingLine(line: string): string {
+  const fwToAscii = (s: string) =>
+    [...s].map((c) => {
+      const code = c.charCodeAt(0)
+      if (code >= 0xff10 && code <= 0xff19) return String.fromCharCode(code - 0xff10 + 48)
+      return c
+    }).join('')
+
+  let s = line
+  s = s.replace(/^([０-９]+)([．.])\s/u, (_, digits: string, punct: string) => {
+    const d = fwToAscii(digits)
+    const dot = punct === '．' ? '.' : punct
+    return `${d}${dot} `
+  })
+  s = s.replace(/^([０-９]+)-([０-９]+)([．.])\s/u, (_, a: string, b: string, punct: string) => {
+    const da = fwToAscii(a)
+    const db = fwToAscii(b)
+    const dot = punct === '．' ? '.' : punct
+    return `${da}-${db}${dot} `
+  })
+  s = s.replace(/^(\d+)(．)\s/u, '$1. ')
+  s = s.replace(/^(\d+)-(\d+)(．)\s/u, '$1-$2. ')
+  return s
+}
+
 function formatContent(content: string): string {
-  const H2_STYLE = "font-size:22px;font-weight:900;margin:48px 0 16px;padding-bottom:8px;border-bottom:3px solid #33B5E5;font-family:'Noto Sans JP',sans-serif;"
+  const H2_STYLE =
+    "font-size:22px;font-weight:700;margin:48px 0 16px;padding-bottom:8px;border-bottom:2px solid #33B5E5;font-family:'Noto Sans JP',sans-serif;"
   const H3_STYLE = 'font-size:18px;font-weight:400;margin:32px 0 12px;color:#111;'
   const P_STYLE = 'margin-bottom:1.6em;'
 
@@ -31,7 +58,7 @@ function formatContent(content: string): string {
   }
 
   for (const line of lines) {
-    const trimmed = line.trim()
+    const trimmed = normalizeNumberedHeadingLine(line.trim())
     if (!trimmed) {
       flushParagraph()
       continue
