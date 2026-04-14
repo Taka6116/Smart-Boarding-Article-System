@@ -615,23 +615,28 @@ export async function generateImagePromptFromArticle(
   if (!apiKey?.trim()) throw new Error('GEMINI_API_KEY が設定されていません')
 
   const contentSnippet = content.trim().slice(0, 1800)
-  const prompt = `You are an expert at writing Stable Diffusion prompts for Japanese B2B SaaS article thumbnails (HR, training, e-learning).
+  const prompt = `You are an expert at writing Stable Diffusion prompts for Japanese B2B SaaS article thumbnails (HR, training, e-learning) aimed at the Japan market.
 
-Read the TITLE and CONTENT below, then output exactly ONE English prompt sentence for a photorealistic 16:9 stock photo that visually represents the article's specific theme.
+Read the TITLE and CONTENT below, then output exactly ONE English prompt sentence for a photorealistic 16:9 stock photo that evokes the article's theme through environment and mood only.
 
-RULES:
-- NO people, humans, silhouettes, or body parts whatsoever
-- NO text, letters, numbers, logos, or watermarks in the image
-- Choose a scene that DIRECTLY reflects this article's specific theme:
-    * online training / e-learning → laptop showing abstract LMS dashboard, course progress UI
-    * leadership / management → empty modern conference room, glass whiteboard with sticky notes
-    * cost / ROI / efficiency → ascending staircase in bright office lobby, upward path concept
-    * onboarding / new employee → bright empty training room with laptops on desks
-    * evaluation / assessment → desk with abstract HR analytics printouts, pen and coffee
-    * general / other → clean workspace flat-lay, overhead white desk with notebook and plant
-- Photorealistic, soft natural lighting, shallow depth of field, creamy bokeh
-- Warm earth tones or pastel palette, bright and airy mood, horizontal 16:9
-- Max 40 words. Output ONE English sentence only. No quotes. No explanation.
+RULES (strict):
+- NO people, humans, silhouettes, hands, or body parts whatsoever (brand-safe empty spaces only)
+- NO text, letters, numbers, logos, watermarks, signage, sticky notes with writing, printed charts, or any legible symbols anywhere in the frame
+- NO UI metaphors: do NOT mention dashboards, LMS, course progress, analytics, charts, graphs, labels, tickers, HUDs, data visualizations, or "interface" of any kind
+- Base every scene in a Japanese business context: include at least one of "modern Japanese office interior", "Tokyo-style bright office", or "Japanese business setting" in your sentence
+- If a laptop, monitor, or tablet appears: the screen must be described ONLY as a soft minimalist glow, blurred abstract wallpaper, or gentle pastel gradient — never icons, chrome, windows, or readable content. Emphasize intentional shallow depth of field or lens blur on the device screen for privacy; it must look like tasteful photographic bokeh, NOT broken or glitchy LCD
+- Plenty of negative space, minimalist composition, clean and calm
+- Photorealistic, soft natural lighting, creamy bokeh, warm earth tones or pastel palette, bright airy mood, horizontal 16:9
+
+Theme hints (rewrite into ONE fluent sentence; never contradict the screen rules above):
+    * online training / e-learning → bright empty seminar room or training space in a Japanese office, desks with laptops where screens show only soft glow or blur
+    * leadership / management → empty modern Japanese conference room, frosted glass, daylight, minimalist furniture
+    * cost / ROI / efficiency → bright office lobby or ascending staircase in a Tokyo-style building, upward lines, no signage
+    * onboarding / new employee → neat empty workstation row in a Japanese office, devices present only with blank or bokeh screens
+    * evaluation / assessment → calm desk still life: pen, coffee, closed notebook, single device with screen out of focus as soft light
+    * general / other → overhead flat-lay on white desk in a Japanese business setting, notebook and plant, optional laptop with screen as soft abstract blur only
+
+Max 42 words. Output ONE English sentence only. No quotes. No explanation.
 
 TITLE: ${title.trim()}
 CONTENT EXCERPT: ${contentSnippet}
@@ -642,6 +647,6 @@ One sentence describing the scene:`
   const sentence = raw.trim().replace(/^["']|["']$/g, '').trim()
   return (
     sentence ||
-    'bright modern training room with laptops on desks and abstract projection on screen, empty, photorealistic, soft daylight, 16:9'
+    'empty bright training room in a modern Japanese office interior, laptops on desks with screens showing only soft minimalist glow and intentional lens blur, Tokyo-style daylight, photorealistic, 16:9'
   )
 }

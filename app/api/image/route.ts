@@ -25,11 +25,11 @@ const ARCH_PASTEL_BG = [
 ] as const
 
 const ARCH_WORKSPACE = [
-  'overhead view of clean wooden desk with laptop notebook and coffee cup, soft natural window light, minimalist workspace, 16:9',
-  'bright cafe table with open laptop and documents, morning light through window, cozy atmosphere, empty chair, 16:9',
-  'modern desk with tablet and small potted plant, soft focus greenery background, bright airy mood, 16:9',
-  'neat workspace near window with laptop pen and calendar on wooden surface, warm natural lighting, 16:9',
-  'overhead flat-lay of notebook pen laptop coffee cup and succulent on white desk, warm lighting, minimalist, 16:9',
+  'overhead view of clean wooden desk with laptop notebook and coffee cup, laptop screen out of frame or only a subtle soft reflection, soft natural window light, minimalist Japanese workspace, 16:9',
+  'bright cafe table with open laptop angled so the display is a soft bokeh glow not readable, documents stacked without visible type, morning light, empty chair, 16:9',
+  'modern desk with tablet propped with screen showing only blurred abstract pastel light, small potted plant, soft focus greenery background, bright airy mood, 16:9',
+  'neat workspace near window with laptop and pen on wooden surface, calendar and papers turned blank side or edge-only, warm natural lighting, screen as gentle glow only, 16:9',
+  'overhead flat-lay of notebook pen laptop coffee cup and succulent on white desk, laptop lid partly closed or screen a soft featureless blur, warm lighting, minimalist, 16:9',
 ] as const
 
 const ARCH_CONCEPTUAL = [
@@ -64,13 +64,26 @@ function getBedrockClient(): BedrockRuntimeClient {
  */
 const SAFE_NEGATIVE_PROMPT = [
   'text, typography, watermark, logo, subtitle, caption',
-  'readable text, legible numbers, gibberish letters, random letters',
+  'readable text, legible numbers, gibberish letters, gibberish text, random letters',
   'carved letters on wood, alphabet blocks, letter cubes',
+  'dollar sign, USD, euro sign, currency symbols',
+  'English UI, roman alphabet on screen, fake interface text',
+  'stock ticker, dashboard labels, HUD text',
   'cartoon, anime, illustration, painting, 3D render',
-  'low quality, blurry, distorted, deformed, oversaturated',
+  'low quality, distorted, deformed, oversaturated',
+  'cracked screen, broken LCD, glitch art, scan lines',
   'dark moody atmosphere, dramatic shadows, noir lighting',
   'neon colors, harsh fluorescent lighting',
 ].join(', ')
+
+/** 全プロンプトに付与するダメ押し（画面の英語・通貨・判読可能文字の抑制） */
+const PROMPT_SCREEN_SAFE_SUFFIX =
+  'minimalist composition, plenty of negative space, any screen must be blank or showing only soft bokeh, no legible text, no currency symbols, no dollar signs'
+
+function appendScreenSafeSuffix(basePrompt: string): string {
+  const t = basePrompt.trim().replace(/,+\s*$/, '')
+  return `${t}, ${PROMPT_SCREEN_SAFE_SUFFIX}`
+}
 
 /**
  * Bedrock SD3.5 に画像生成リクエストを送信する
@@ -175,8 +188,9 @@ export async function POST(request: NextRequest) {
   /* --- リトライ付き画像生成 --- */
   let lastFilterReason = ''
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    const currentPrompt = attempt === 0 ? prompt : buildPrompt()
-    const currentNegative = attempt === 0 ? SAFE_NEGATIVE_PROMPT : ''
+    const basePrompt = attempt === 0 ? prompt : buildPrompt()
+    const currentPrompt = appendScreenSafeSuffix(basePrompt)
+    const currentNegative = SAFE_NEGATIVE_PROMPT
 
     console.log(`[IMAGE] Attempt ${attempt + 1}/${MAX_RETRIES}`)
 
