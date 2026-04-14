@@ -6,6 +6,7 @@ import { Step, ArticleData, ProcessingState } from '@/lib/types'
 import { applyInternalLinksToText } from '@/lib/internalLinks'
 import { getArticleById, saveArticle, updateArticleStatus } from '@/lib/articleStorage'
 import { setSessionPreviewImage } from '@/lib/sessionPreviewImage'
+import { compositeArticleTitleOnImage } from '@/lib/compositeArticleTitleOnImage'
 import { parseWordPressTagsInput } from '@/lib/wordpressTags'
 import type { WordPressPublishChoice } from '@/lib/wordpressPublishChoice'
 import ArticleInput from '@/components/editor/ArticleInput'
@@ -320,7 +321,16 @@ function EditorContent() {
             article.internalLinks ?? []
           )
           sessionStorage.setItem('preview_content', content)
-          await setSessionPreviewImage(article.imageUrl || null)
+          let previewImage: string | null = article.imageUrl || null
+          const title = article.refinedTitle?.trim() || article.title || ''
+          if (previewImage && title) {
+            try {
+              previewImage = await compositeArticleTitleOnImage(previewImage, title)
+            } catch {
+              /* raw のまま */
+            }
+          }
+          await setSessionPreviewImage(previewImage)
           const params = new URLSearchParams({
             title: (article.refinedTitle || article.title || '').trim(),
             category: 'お役立ち情報',

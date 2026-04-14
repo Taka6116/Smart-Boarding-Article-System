@@ -134,11 +134,14 @@ function PreviewContent() {
       } catch { /* ignore */ }
     }
     setWordpressUrl(wp)
-    if (storedImage) {
+    // 直前の「プレビューへ」で焼き込み済みを session に入れているため、article の raw より優先する
+    const sessionImage = sessionStorage.getItem('preview_image')?.trim() || ''
+    if (sessionImage) {
+      setImageUrl(sessionImage)
+    } else if (storedImage) {
       setImageUrl(storedImage)
     } else {
-      const sessionImage = sessionStorage.getItem('preview_image')
-      setImageUrl(sessionImage || searchParams.get('imageUrl') || '')
+      setImageUrl(searchParams.get('imageUrl') || '')
     }
   }, [searchParams])
 

@@ -9,63 +9,7 @@ import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import { ArrowLeft, ArrowRight, Clock, Download, RefreshCw, Sparkles, Upload } from 'lucide-react'
 import { setSessionPreviewImage } from '@/lib/sessionPreviewImage'
-
-async function compositeTextOnImage(imageDataUrl: string, titleText: string): Promise<string> {
-  return new Promise((resolve) => {
-    const img = new window.Image()
-    img.onload = () => {
-      const W = img.naturalWidth || 1280
-      const H = img.naturalHeight || 720
-      const canvas = document.createElement('canvas')
-      canvas.width = W
-      canvas.height = H
-      const ctx = canvas.getContext('2d')!
-      ctx.drawImage(img, 0, 0, W, H)
-
-      const gradH = H * 0.58
-      const grad = ctx.createLinearGradient(0, H - gradH, 0, H)
-      grad.addColorStop(0, 'rgba(0,0,0,0)')
-      grad.addColorStop(1, 'rgba(0,0,0,0.74)')
-      ctx.fillStyle = grad
-      ctx.fillRect(0, H - gradH, W, gradH)
-
-      const pad = W * 0.06
-      const maxW = W - pad * 2
-      const fontSize = Math.round(W * 0.036)
-      ctx.font = `bold ${fontSize}px "Noto Sans JP","Hiragino Sans","Yu Gothic",sans-serif`
-      ctx.fillStyle = '#FFFFFF'
-      ctx.shadowColor = 'rgba(0,0,0,0.55)'
-      ctx.shadowBlur = 10
-
-      const chars = [...titleText]
-      const lines: string[] = []
-      let cur = ''
-      for (const ch of chars) {
-        if (ctx.measureText(cur + ch).width > maxW && cur) {
-          lines.push(cur)
-          cur = ch
-          if (lines.length >= 3) break
-        } else {
-          cur += ch
-        }
-      }
-      if (cur && lines.length < 4) lines.push(cur)
-
-      const lh = fontSize * 1.42
-      const totalH = lines.length * lh
-      const startY = H - pad - totalH + fontSize
-
-      lines.forEach((line, i) => {
-        ctx.fillText(line, pad, startY + i * lh)
-      })
-
-      resolve(canvas.toDataURL('image/jpeg', 0.92))
-    }
-    img.onerror = () => resolve(imageDataUrl)
-    img.crossOrigin = 'anonymous'
-    img.src = imageDataUrl
-  })
-}
+import { compositeArticleTitleOnImage } from '@/lib/compositeArticleTitleOnImage'
 
 interface ImageResultProps {
   article: ArticleData
@@ -115,7 +59,7 @@ export default function ImageResult({
       setComposited(article.imageUrl)
       return
     }
-    compositeTextOnImage(article.imageUrl, title).then(setComposited)
+    compositeArticleTitleOnImage(article.imageUrl, title).then(setComposited)
   }, [article.imageUrl, article.refinedTitle, article.title, fireflyStatus])
 
   const handlePreview = useCallback(async () => {
@@ -129,13 +73,13 @@ export default function ImageResult({
       const content = article.refinedContent || article.originalContent || ''
       sessionStorage.setItem('preview_content', content)
 
-      // 合成済み画像を優先。まだ生成中なら compositeTextOnImage を待つ
+      // 合成済み画像を優先。まだ生成中なら compositeArticleTitleOnImage を待つ
       let previewImage = composited || article.imageUrl || null
       if (!composited && article.imageUrl) {
         const title = article.refinedTitle?.trim() || article.title || ''
         if (title) {
           try {
-            previewImage = await compositeTextOnImage(article.imageUrl, title)
+            previewImage = await compositeArticleTitleOnImage(article.imageUrl, title)
           } catch {
             previewImage = article.imageUrl
           }
