@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useEffect, ChangeEvent } from 'react'
+import { useRef, useState, useEffect, ChangeEvent, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { ArticleData, ProcessingState, Step } from '@/lib/types'
@@ -100,7 +100,9 @@ export default function ImageResult({
 }: ImageResultProps) {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const previewBusyRef = useRef(false)
   const [composited, setComposited] = useState('')
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false)
 
   /** タイトル焼き込みは表示・DL・プレビュー用。下書き/投稿に合成画像を載せる場合は親で imageUrl を更新する必要あり */
   useEffect(() => {
@@ -116,39 +118,59 @@ export default function ImageResult({
     compositeTextOnImage(article.imageUrl, title).then(setComposited)
   }, [article.imageUrl, article.refinedTitle, article.title, fireflyStatus])
 
-  const handlePreview = async () => {
-    const savedId = await onSaveDraft()
-    const finalArticleId = savedId || articleId
+  const handlePreview = useCallback(async () => {
+    if (previewBusyRef.current) return
+    previewBusyRef.current = true
+    setIsPreviewLoading(true)
+    try {
+      const savedId = await onSaveDraft()
+      const finalArticleId = savedId || articleId
 
-    const content = article.refinedContent || article.originalContent || ''
-    sessionStorage.setItem('preview_content', content)
+      const content = article.refinedContent || article.originalContent || ''
+      sessionStorage.setItem('preview_content', content)
 
-    // 合成済み画像を優先。まだ生成中なら compositeTextOnImage を待つ
-    let previewImage = composited || article.imageUrl || null
-    if (!composited && article.imageUrl) {
-      const title = article.refinedTitle?.trim() || article.title || ''
-      if (title) {
-        try {
-          previewImage = await compositeTextOnImage(article.imageUrl, title)
-        } catch {
-          previewImage = article.imageUrl
+      // 合成済み画像を優先。まだ生成中なら compositeTextOnImage を待つ
+      let previewImage = composited || article.imageUrl || null
+      if (!composited && article.imageUrl) {
+        const title = article.refinedTitle?.trim() || article.title || ''
+        if (title) {
+          try {
+            previewImage = await compositeTextOnImage(article.imageUrl, title)
+          } catch {
+            previewImage = article.imageUrl
+          }
         }
       }
-    }
-    await setSessionPreviewImage(previewImage)
+      await setSessionPreviewImage(previewImage)
 
-    const params = new URLSearchParams({
-      title: article.refinedTitle?.trim() || article.title || '',
-      category: 'お役立ち情報',
-      date: new Date().toLocaleDateString('ja-JP', {
-        year: 'numeric',
-        month: 'numeric',
-        day: 'numeric',
-      }).replace(/\//g, '.'),
-    })
-    if (finalArticleId) params.set('articleId', finalArticleId)
-    router.push(`/preview?${params.toString()}`)
-  }
+      const params = new URLSearchParams({
+        title: article.refinedTitle?.trim() || article.title || '',
+        category: 'お役立ち情報',
+        date: new Date().toLocaleDateString('ja-JP', {
+          year: 'numeric',
+          month: 'numeric',
+          day: 'numeric',
+        }).replace(/\//g, '.'),
+      })
+      if (finalArticleId) params.set('articleId', finalArticleId)
+      router.push(`/preview?${params.toString()}`)
+    } catch (e) {
+      previewBusyRef.current = false
+      setIsPreviewLoading(false)
+      const msg = e instanceof Error ? e.message : 'プレビュー画面への遷移に失敗しました'
+      alert(msg)
+    }
+  }, [
+    article.refinedContent,
+    article.originalContent,
+    article.imageUrl,
+    article.refinedTitle,
+    article.title,
+    composited,
+    articleId,
+    onSaveDraft,
+    router,
+  ])
 
   const handleDownload = () => {
     const link = document.createElement('a')
@@ -178,7 +200,8 @@ export default function ImageResult({
   }
 
   return (
-    <div className="w-full pt-6 pb-12">
+    <div className="w-full pt-6 pb-12" aria-busy={isPreviewLoading}>
+      <PreviewNavigationOverlay active={isPreviewLoading} />
       {/* 2カラム：左＝メインコンテンツ、右＝StepIndicator */}
       <div className="flex gap-8 items-start">
         {/* 左：メインコンテンツ（可変幅） */}
@@ -261,12 +284,15 @@ export default function ImageResult({
                 </Button>
               </div>
 
-              <div className="w-full max-w-[640px] flex items-center justify-between gap-4 pt-2 border-t border-[#E2E8F0]">
+              <div
+                className={`w-full max-w-[640px] flex items-center justify-between gap-4 pt-2 border-t border-[#E2E8F0] ${isPreviewLoading ? 'opacity-60 pointer-events-none' : ''}`}
+              >
                 <button
                   type="button"
                   onClick={onSaveDraft}
                   className="flex items-center gap-2 px-5 py-3 rounded-lg text-sm font-medium flex-shrink-0"
                   style={{ background: '#F0F4FF', border: '1.5px solid #C7D7FF', color: '#1A9FCC' }}
+                  disabled={isPreviewLoading}
                 >
                   💾 下書きに保存
                 </button>
@@ -274,7 +300,7 @@ export default function ImageResult({
                   variant="primary"
                   size="lg"
                   onClick={handlePreview}
-                  disabled={fireflyStatus !== 'success' || !article.imageUrl}
+                  disabled={fireflyStatus !== 'success' || !article.imageUrl || isPreviewLoading}
                   className="flex-shrink-0"
                 >
                   プレビューへ
@@ -297,6 +323,119 @@ export default function ImageResult({
           <ArrowLeft size={16} />
           Gemini推敲に戻る
         </Button>
+      </div>
+    </div>
+  )
+}
+
+const PREVIEW_NAV_PHASES = [
+  { label: '下書きを保存しています' },
+  { label: 'プレビュー用の画像を準備しています' },
+] as const
+
+/** プレビューへ遷移中：フルスクリーン風オーバーレイ */
+function PreviewNavigationOverlay({ active }: { active: boolean }) {
+  const [reduceMotion, setReduceMotion] = useState(false)
+  const [phaseIndex, setPhaseIndex] = useState(0)
+  const [progress, setProgress] = useState(0)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+    setReduceMotion(mq.matches)
+    const onChange = () => setReduceMotion(mq.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+
+  useEffect(() => {
+    if (!active) {
+      setPhaseIndex(0)
+      setProgress(0)
+      return
+    }
+    setPhaseIndex(0)
+    setProgress(6)
+    const t = window.setTimeout(() => setPhaseIndex(1), 2800)
+    return () => window.clearTimeout(t)
+  }, [active])
+
+  useEffect(() => {
+    if (!active || reduceMotion) return
+    const id = window.setInterval(() => {
+      setProgress((p) => {
+        if (p >= 96) return 96
+        const remaining = 96 - p
+        const step = p < 40 ? Math.max(1.2, remaining * 0.06) : Math.max(0.35, remaining * 0.04)
+        return p + step
+      })
+    }, 150)
+    return () => window.clearInterval(id)
+  }, [active, reduceMotion])
+
+  if (!active) return null
+
+  const ringR = 44
+  const c = 2 * Math.PI * ringR
+  const dash = Math.round(c * 0.28)
+  const spinClass = reduceMotion
+    ? ''
+    : 'motion-reduce:animate-none animate-[spin_1.35s_linear_infinite]'
+  const barWidth = reduceMotion ? 42 : Math.min(progress, 96)
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6 bg-slate-900/35 backdrop-blur-[2px]"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <div
+        className="w-full max-w-[420px] rounded-2xl border border-[#E2E8F0] bg-white px-8 py-9 flex flex-col items-center text-center shadow-[0_10px_40px_rgba(15,23,42,0.12),0_2px_12px_rgba(15,23,42,0.06)]"
+        style={{
+          background: 'linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 52%)',
+        }}
+      >
+        <div className="relative w-[100px] h-[100px] mb-5 flex items-center justify-center">
+          <svg
+            className={`absolute inset-0 w-[100px] h-[100px] text-[#1A9FCC] ${spinClass}`}
+            viewBox="0 0 100 100"
+            fill="none"
+            aria-hidden
+          >
+            <circle cx="50" cy="50" r={ringR} stroke="#E2E8F0" strokeWidth="5" fill="none" />
+            <circle
+              cx="50"
+              cy="50"
+              r={ringR}
+              stroke="currentColor"
+              strokeWidth="5"
+              strokeLinecap="round"
+              fill="none"
+              strokeDasharray={`${dash} ${Math.round(c)}`}
+              transform="rotate(-90 50 50)"
+            />
+          </svg>
+          <Sparkles className="relative w-9 h-9 text-[#1A9FCC]" strokeWidth={1.75} aria-hidden />
+        </div>
+
+        <h2 className="text-base sm:text-lg font-bold text-[#1A1A2E] leading-snug tracking-tight px-1">
+          下書きを保存し、プレビュー画面を生成しています。
+        </h2>
+        <p className="text-sm text-[#64748B] mt-2 max-w-sm leading-relaxed">
+          記事データと画像をまとめて、プレビュー用の画面を開いています。
+        </p>
+
+        <p className="mt-5 text-xs sm:text-sm font-medium text-[#1A9FCC] min-h-[1.25rem] transition-opacity duration-300">
+          {PREVIEW_NAV_PHASES[phaseIndex]?.label}
+        </p>
+
+        <div className="w-full max-w-[260px] h-1.5 rounded-full bg-[#E2E8F0] overflow-hidden mt-4">
+          <div
+            className={`h-full rounded-full bg-[#1A9FCC] ${reduceMotion ? '' : 'transition-[width] duration-200 ease-out'}`}
+            style={{ width: `${barWidth}%` }}
+          />
+        </div>
       </div>
     </div>
   )
