@@ -3,6 +3,7 @@
  * 全角「。」の直後に改行を挿入し、文の切れ目を優先する（。」・連続「。」・既存改行の直後は除外）。
  * 全角スペース（U+3000）は行頭に置かない。行末が開き括弧のまま次文字が入らないときは括弧を次行へ退避する。
  * 製品名・社名の直前に改行を入れ、1行目を論点・2行目を訴求句に寄せる（幅折りの前段階）。
+ * 折り返し後に1字だけの行などがあれば、幅が許すとき前行へ結合して取り残しを抑える。
  */
 
 /** タイトル用：半角 |・全角 ｜ をスペースにし、連続スペースを詰める */
@@ -66,6 +67,37 @@ function headProhibited(firstGrapheme: string): boolean {
 function lineEndProhibited(lastGrapheme: string): boolean {
   const ch = [...lastGrapheme].at(-1) ?? lastGrapheme
   return LINE_END_PROHIBITED.has(ch)
+}
+
+/** 1 グラフェムだけの行や短い 2 グラフェム行を前行に結合（例: 「成功戦」+「略」） */
+function collapseOrphanTailLines(
+  ctx: CanvasRenderingContext2D,
+  lines: string[],
+  maxW: number,
+): string[] {
+  const out = [...lines]
+  let i = 1
+  while (i < out.length) {
+    const cur = out[i]!
+    const g = segmentGraphemes(cur)
+    if (g.length === 1) {
+      const merged = out[i - 1]! + cur
+      if (ctx.measureText(merged).width <= maxW) {
+        out[i - 1] = merged
+        out.splice(i, 1)
+        continue
+      }
+    } else if (g.length === 2 && ctx.measureText(cur).width < maxW * 0.36) {
+      const merged = out[i - 1]! + cur
+      if (ctx.measureText(merged).width <= maxW) {
+        out[i - 1] = merged
+        out.splice(i, 1)
+        continue
+      }
+    }
+    i++
+  }
+  return out
 }
 
 function wrapSegment(
@@ -137,7 +169,7 @@ function wrapSegment(
     lines.push(lineG.join(''))
   }
 
-  return lines
+  return collapseOrphanTailLines(ctx, lines, maxW)
 }
 
 export function wrapTitleLines(
