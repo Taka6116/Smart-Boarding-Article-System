@@ -644,24 +644,25 @@ export async function generateImagePromptFromArticle(
   const contentSnippet = content.trim().slice(0, 1800)
   const prompt = `You are an expert at writing Stable Diffusion prompts for Japanese B2B SaaS article thumbnails (HR, training, e-learning) aimed at the Japan market.
 
-Read the TITLE and CONTENT below, then output exactly ONE English prompt sentence for a photorealistic 16:9 stock photo that evokes the article's theme through environment and mood only.
+Read the TITLE and CONTENT below, then pick exactly ONE best-matching expression archetype from the list (by concept, not by printing its name), and output exactly ONE English prompt sentence for a photorealistic 16:9 image that evokes the article through scene, objects, light, and mood only.
 
-RULES (strict):
+ARCHETYPE CHOICES (pick one that fits the article; weave it naturally into your sentence — do not output the archetype label):
+1) workspace_still_life — Neat wooden desk, notebook, coffee cup, laptop with screen showing only a minimalist pastel gradient or glow and lens blur (work, learning).
+2) abstract_concept_metaphor — Symbolic objects: ascending staircase, compass, interlocking puzzle pieces with NO writing, or water ripples (growth, direction, teamwork, ideas).
+3) nature_and_light — Fresh green plant leaves near a sunny window, wide empty field under blue sky, or tranquil lake horizon (potential, calm, fresh start).
+4) minimalist_macro_detail — Extreme close-up on texture of premium paper, fountain pen nib, leather notebook cover, or architectural materials (quality, focus, craftsmanship).
+5) architectural_lines_and_reflections — Modern office building facade, conference room structural lines with frosted glass, or daylight reflections on glass (structure, transparency, corporate tone). No signage or readable text.
+6) abstract_geometric_forms — Clean compositions of soft 3D geometric shapes, layered color-blocked panels, or floating transparent spheres (harmony, systems, connection).
+
+RULES (strict — unchanged):
 - NO people, humans, silhouettes, hands, or body parts whatsoever (brand-safe empty spaces only)
 - NO text, letters, numbers, logos, watermarks, signage, sticky notes with writing, printed charts, or any legible symbols anywhere in the frame
 - NO UI metaphors: do NOT mention dashboards, LMS, course progress, analytics, charts, graphs, labels, tickers, HUDs, data visualizations, or "interface" of any kind
-- Base every scene in a Japanese business context: include at least one of "modern Japanese office interior", "Tokyo-style bright office", or "Japanese business setting" in your sentence
-- If a laptop, monitor, or tablet appears: the screen must be described ONLY as a soft minimalist glow, blurred abstract wallpaper, or gentle pastel gradient — never icons, chrome, windows, or readable content. Emphasize intentional shallow depth of field or lens blur on the device screen for privacy; it must look like tasteful photographic bokeh, NOT broken or glitchy LCD
+- If a laptop, monitor, or tablet appears: the screen must be described ONLY as a soft minimalist glow, blurred abstract wallpaper, or gentle gradient — never icons, chrome, windows, or readable content; use tasteful photographic bokeh or lens blur on the screen, NOT broken or glitchy LCD
 - Plenty of negative space, minimalist composition, clean and calm
-- Photorealistic, soft natural lighting, creamy bokeh, warm earth tones or pastel palette, bright airy mood, horizontal 16:9
+- Horizontal 16:9; photorealistic
 
-Theme hints (rewrite into ONE fluent sentence; never contradict the screen rules above):
-    * online training / e-learning → bright empty seminar room or training space in a Japanese office, desks with laptops where screens show only soft glow or blur
-    * leadership / management → empty modern Japanese conference room, frosted glass, daylight, minimalist furniture
-    * cost / ROI / efficiency → bright office lobby or ascending staircase in a Tokyo-style building, upward lines, no signage
-    * onboarding / new employee → neat empty workstation row in a Japanese office, devices present only with blank or bokeh screens
-    * evaluation / assessment → calm desk still life: pen, coffee, closed notebook, single device with screen out of focus as soft light
-    * general / other → overhead flat-lay on white desk in a Japanese business setting, notebook and plant, optional laptop with screen as soft abstract blur only
+COLOR PALETTE: Do NOT default to pastel. Choose ONE palette that fits the article mood from: cool blue and silver (intellectual); warm earth tones (warmth); vibrant accents (pop); monochrome with one restrained spot color (refined); or bright airy pastel (only when it truly fits). Name the palette implicitly through your color and lighting words.
 
 Max 42 words. Output ONE English sentence only. No quotes. No explanation.
 
@@ -674,6 +675,6 @@ One sentence describing the scene:`
   const sentence = raw.trim().replace(/^["']|["']$/g, '').trim()
   return (
     sentence ||
-    'empty bright training room in a modern Japanese office interior, laptops on desks with screens showing only soft minimalist glow and intentional lens blur, Tokyo-style daylight, photorealistic, 16:9'
+    'clean minimalist photorealistic composition, soft natural lighting, horizontal 16:9'
   )
 }

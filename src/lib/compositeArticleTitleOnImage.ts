@@ -2,6 +2,8 @@
  * 記事アイキャッチ用に画像へタイトルテキストを焼き込む（クライアント専用・Canvas）。
  * プレビュー表示・DL・session 保存前の合成に利用する。
  */
+import { wrapTitleLines } from '@/lib/titleCanvasWrap'
+
 export async function compositeArticleTitleOnImage(
   imageDataUrl: string,
   titleText: string
@@ -26,7 +28,7 @@ export async function compositeArticleTitleOnImage(
       ctx.fillStyle = grad
       ctx.fillRect(0, H - gradH, W, gradH)
 
-      const pad = W * 0.06
+      const pad = W * 0.04
       const maxW = W - pad * 2
       const fontSize = Math.round(W * 0.036)
       ctx.font = `bold ${fontSize}px "Noto Sans JP","Hiragino Sans","Yu Gothic",sans-serif`
@@ -34,19 +36,7 @@ export async function compositeArticleTitleOnImage(
       ctx.shadowColor = 'rgba(0,0,0,0.55)'
       ctx.shadowBlur = 10
 
-      const chars = [...titleText]
-      const lines: string[] = []
-      let cur = ''
-      for (const ch of chars) {
-        if (ctx.measureText(cur + ch).width > maxW && cur) {
-          lines.push(cur)
-          cur = ch
-          if (lines.length >= 3) break
-        } else {
-          cur += ch
-        }
-      }
-      if (cur && lines.length < 4) lines.push(cur)
+      const lines = wrapTitleLines(ctx, titleText, maxW, { maxLines: 4 })
 
       const lh = fontSize * 1.42
       const totalH = lines.length * lh

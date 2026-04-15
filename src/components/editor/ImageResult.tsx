@@ -176,7 +176,7 @@ export default function ImageResult({
               {fireflyStatus === 'loading' && <ImageGenerationLoader />}
               {/* 画像があるとき：画像表示（生成中はローダーを優先） */}
               {article.imageUrl && fireflyStatus !== 'loading' && (
-                <div className="w-full max-w-[640px] rounded-lg overflow-hidden border border-[#E2E8F0]">
+                <div className="w-full max-w-[min(100%,960px)] rounded-lg overflow-hidden border border-[#E2E8F0]">
                   <Image
                     key={composited || article.imageUrl}
                     src={composited || article.imageUrl}
@@ -229,7 +229,7 @@ export default function ImageResult({
               </div>
 
               <div
-                className={`w-full max-w-[640px] flex items-center justify-between gap-4 pt-2 border-t border-[#E2E8F0] ${isPreviewLoading ? 'opacity-60 pointer-events-none' : ''}`}
+                className={`w-full max-w-[min(100%,960px)] flex items-center justify-between gap-4 pt-2 border-t border-[#E2E8F0] ${isPreviewLoading ? 'opacity-60 pointer-events-none' : ''}`}
               >
                 <button
                   type="button"
@@ -392,7 +392,7 @@ function ImageGenerationLoader() {
   const dash = Math.round(c * 0.28)
 
   return (
-    <div className="w-full max-w-[640px] flex flex-col gap-4" role="status" aria-live="polite">
+    <div className="w-full max-w-[min(100%,960px)] flex flex-col gap-4" role="status" aria-live="polite">
       <div
         className="w-full rounded-2xl border border-[#E2E8F0] bg-white px-8 py-10 flex flex-col items-center text-center"
         style={{ boxShadow: '0 10px 40px rgba(15, 23, 42, 0.08), 0 2px 12px rgba(15, 23, 42, 0.04)' }}

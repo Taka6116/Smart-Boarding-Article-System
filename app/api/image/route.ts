@@ -172,11 +172,7 @@ export async function POST(request: NextRequest) {
   if (title.trim() && trimmedContent) {
     try {
       const geminiPrompt = await generateImagePromptFromArticle(title.trim(), trimmedContent)
-      prompt = [
-        geminiPrompt,
-        'photorealistic stock photography, shallow depth of field, bright airy mood',
-        'soft natural lighting, pastel or warm earth tones, horizontal 16:9',
-      ].join(', ')
+      prompt = geminiPrompt
     } catch (e) {
       console.warn('[IMAGE] Gemini prompt failed, using fallback:', (e as Error)?.message)
       prompt = buildPrompt()
