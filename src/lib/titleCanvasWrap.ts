@@ -1,6 +1,7 @@
 /**
  * Canvas measureText 用のタイトル折り返し。JIS 完全準拠ではない実用サブセットの行頭・行末禁則。
  * 全角「。」の直後に改行を挿入し、文の切れ目を優先する（。」・連続「。」・既存改行の直後は除外）。
+ * 全角スペース（U+3000）は行頭に置かない。行末が開き括弧のまま次文字が入らないときは括弧を次行へ退避する。
  */
 
 /** 句点のあとで次の文へ送るための改行（禁則で 」』 行頭や「。。」を避ける） */
@@ -9,7 +10,7 @@ function insertLineBreaksAfterPeriod(text: string): string {
 }
 
 const LINE_HEAD_PROHIBITED = new Set(
-  '、。，．！？」』）〕］｝〉》ゝゞーぁぃぅぇぉっゃゅょゎァィゥェォッャュョヮヽヾ％‰°′″'.split(
+  '、。，．！？」』）〕］｝〉》ゝゞーぁぃぅぇぉっゃゅょゎァィゥェォッャュョヮヽヾ％‰°′″\u3000'.split(
     '',
   ),
 )
@@ -70,6 +71,18 @@ function wrapSegment(
       lineEndProhibited(lineG[lineG.length - 1]!) &&
       fits([...lineG, rem[0]!].join(''))
     ) {
+      lineG.push(rem.shift()!)
+    }
+
+    while (
+      rem.length > 0 &&
+      lineG.length > 0 &&
+      lineEndProhibited(lineG[lineG.length - 1]!)
+    ) {
+      rem.unshift(lineG.pop()!)
+    }
+
+    if (lineG.length === 0 && rem.length > 0) {
       lineG.push(rem.shift()!)
     }
 
