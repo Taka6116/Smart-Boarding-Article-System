@@ -1,6 +1,12 @@
 /**
  * Canvas measureText 用のタイトル折り返し。JIS 完全準拠ではない実用サブセットの行頭・行末禁則。
+ * 全角「。」の直後に改行を挿入し、文の切れ目を優先する（。」・連続「。」・既存改行の直後は除外）。
  */
+
+/** 句点のあとで次の文へ送るための改行（禁則で 」』 行頭や「。。」を避ける） */
+function insertLineBreaksAfterPeriod(text: string): string {
+  return text.replace(/。(?=[^\n])(?![。\n」』])/g, '。\n')
+}
 
 const LINE_HEAD_PROHIBITED = new Set(
   '、。，．！？」』）〕］｝〉》ゝゞーぁぃぅぇぉっゃゅょゎァィゥェォッャュョヮヽヾ％‰°′″'.split(
@@ -96,10 +102,12 @@ export function wrapTitleLines(
   opts?: { maxLines?: number },
 ): string[] {
   const maxLines = opts?.maxLines ?? 4
-  const blocks = titleText.split(/\n/)
+  const blocks = insertLineBreaksAfterPeriod(titleText).split(/\n/)
   const out: string[] = []
 
-  for (const block of blocks) {
+  for (const rawBlock of blocks) {
+    const block = rawBlock.trimStart()
+    if (block === '') continue
     if (out.length >= maxLines) break
     const g = segmentGraphemes(block)
     const remaining = maxLines - out.length
