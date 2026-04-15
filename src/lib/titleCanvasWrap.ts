@@ -2,11 +2,43 @@
  * Canvas measureText 用のタイトル折り返し。JIS 完全準拠ではない実用サブセットの行頭・行末禁則。
  * 全角「。」の直後に改行を挿入し、文の切れ目を優先する（。」・連続「。」・既存改行の直後は除外）。
  * 全角スペース（U+3000）は行頭に置かない。行末が開き括弧のまま次文字が入らないときは括弧を次行へ退避する。
+ * 製品名・社名の直前に改行を入れ、1行目を論点・2行目を訴求句に寄せる（幅折りの前段階）。
  */
+
+/** タイトル用：半角 |・全角 ｜ をスペースにし、連続スペースを詰める */
+export function stripTitlePipeChars(s: string): string {
+  return s.replace(/[|｜]/g, ' ').replace(/ {2,}/g, ' ').trim()
+}
 
 /** 句点のあとで次の文へ送るための改行（禁則で 」』 行頭や「。。」を避ける） */
 function insertLineBreaksAfterPeriod(text: string): string {
   return text.replace(/。(?=[^\n])(?![。\n」』])/g, '。\n')
+}
+
+/** 先頭からこの文字数以上あれば、その直前で改行してよい製品名・社名（先にマッチしたもののみ適用） */
+const LEAD_BREAK_PHRASES: readonly { re: RegExp; minPrefix: number }[] = [
+  { re: /Smart\s+Boarding/i, minPrefix: 3 },
+  { re: /スマートボーディング/, minPrefix: 3 },
+  { re: /株式会社FCE/, minPrefix: 3 },
+]
+
+function insertBreakBeforeLeadProductPhrase(text: string): string {
+  return text
+    .split(/\n/)
+    .map((segment) => {
+      const s = segment.trim()
+      if (!s) return segment
+      for (const { re, minPrefix } of LEAD_BREAK_PHRASES) {
+        const m = re.exec(s)
+        if (m?.index != null && m.index >= minPrefix) {
+          const head = s.slice(0, m.index).trimEnd()
+          const tail = s.slice(m.index)
+          return `${head}\n${tail}`
+        }
+      }
+      return segment
+    })
+    .join('\n')
 }
 
 const LINE_HEAD_PROHIBITED = new Set(
@@ -115,7 +147,10 @@ export function wrapTitleLines(
   opts?: { maxLines?: number },
 ): string[] {
   const maxLines = opts?.maxLines ?? 4
-  const blocks = insertLineBreaksAfterPeriod(titleText).split(/\n/)
+  const prepped = insertBreakBeforeLeadProductPhrase(
+    insertLineBreaksAfterPeriod(stripTitlePipeChars(titleText)),
+  )
+  const blocks = prepped.split(/\n/)
   const out: string[] = []
 
   for (const rawBlock of blocks) {
