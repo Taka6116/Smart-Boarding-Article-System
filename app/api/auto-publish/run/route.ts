@@ -43,6 +43,7 @@ import {
   generateSlugFromGemini,
 } from '@/lib/api/gemini'
 import { generateArticleImage } from '@/lib/imageGeneration'
+import { compositeArticleTitleOnImageServer } from '@/lib/compositeArticleTitleOnImageServer'
 import { postToWordPress } from '@/lib/wordpress'
 import type { SavedArticle } from '@/lib/types'
 import { loadLatestKeywordsDataset } from '@/lib/ahrefsDataset'
@@ -231,8 +232,7 @@ async function processKeyword(
     content: refined.refinedContent,
   })
 
-  // 6. タイトル焼き込み（@napi-rs/canvas を webpack のバンドル対象から外すため dynamic import）
-  const { compositeArticleTitleOnImageServer } = await import('@/lib/compositeArticleTitleOnImageServer')
+  // 6. タイトル焼き込み
   const composited = await compositeArticleTitleOnImageServer(image.buffer, refined.refinedTitle)
 
   // 7. WordPress メディアアップロード
