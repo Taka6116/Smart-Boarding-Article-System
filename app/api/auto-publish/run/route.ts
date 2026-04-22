@@ -60,9 +60,35 @@ function getScheduledDelayHours(): number {
   return 2
 }
 
-function computeScheduledDate(): string {
-  const delayMs = getScheduledDelayHours() * 60 * 60 * 1000
+function computeScheduledDate(overrideMinutes?: number): string {
+  const delayMs =
+    typeof overrideMinutes === 'number' && Number.isFinite(overrideMinutes) && overrideMinutes >= 0
+      ? overrideMinutes * 60 * 1000
+      : getScheduledDelayHours() * 60 * 60 * 1000
   return new Date(Date.now() + delayMs).toISOString()
+}
+
+/** テスト用オーバーライド（クエリ ?status= / ?delayMinutes=） */
+interface RunOverrides {
+  status?: 'draft' | 'publish' | 'future'
+  delayMinutes?: number
+}
+
+function parseOverrides(request: NextRequest): RunOverrides {
+  const url = new URL(request.url)
+  const out: RunOverrides = {}
+  const s = url.searchParams.get('status')?.trim().toLowerCase()
+  if (s === 'draft' || s === 'publish' || s === 'future') {
+    out.status = s
+  }
+  const d = url.searchParams.get('delayMinutes')?.trim()
+  if (d) {
+    const n = parseFloat(d)
+    if (Number.isFinite(n) && n >= 0 && n <= 1440) {
+      out.delayMinutes = n
+    }
+  }
+  return out
 }
 
 function isCronAuthorized(request: NextRequest): boolean {
@@ -135,11 +161,15 @@ async function uploadImageToWordPressMedia(
   return { mediaId: media.id, sourceUrl }
 }
 
-async function processSingleItem(item: AutoRunQueueItem): Promise<{
+async function processSingleItem(
+  item: AutoRunQueueItem,
+  overrides: RunOverrides = {},
+): Promise<{
   articleId: string
   wordpressPostId: number
   wordpressUrl: string
   scheduledFor: string
+  status: 'draft' | 'publish' | 'future'
 }> {
   console.log('[auto-publish] start item', {
     id: item.id,
@@ -185,9 +215,10 @@ async function processSingleItem(item: AutoRunQueueItem): Promise<{
     item.keyword.slice(0, 40),
   )
 
-  // 7. WordPress へ予約投稿
-  const scheduledFor = computeScheduledDate()
-  const wpStatus: 'future' = 'future'
+  // 7. WordPress へ投稿（デフォルト: future+2h、オーバーライド可）
+  const wpStatus: 'draft' | 'publish' | 'future' = overrides.status ?? 'future'
+  const scheduledFor =
+    wpStatus === 'future' ? computeScheduledDate(overrides.delayMinutes) : new Date().toISOString()
   const postResult = await postToWordPress(
     {
       title: refined.refinedTitle,
@@ -198,7 +229,7 @@ async function processSingleItem(item: AutoRunQueueItem): Promise<{
     },
     wpStatus,
     {
-      scheduledDate: scheduledFor,
+      ...(wpStatus === 'future' ? { scheduledDate: scheduledFor } : {}),
       preUploadedMediaId: media.mediaId,
       preUploadedImageUrl: media.sourceUrl,
       ...(item.wordpressCategoryIds ? { categoryIds: item.wordpressCategoryIds } : {}),
@@ -240,10 +271,11 @@ async function processSingleItem(item: AutoRunQueueItem): Promise<{
     wordpressPostId: postResult.id,
     wordpressUrl: postResult.link,
     scheduledFor,
+    status: wpStatus,
   }
 }
 
-async function runAutoPublish(): Promise<NextResponse> {
+async function runAutoPublish(overrides: RunOverrides = {}): Promise<NextResponse> {
   const head = await peekAutoRunItem()
   if (!head) {
     console.log('[auto-publish] queue is empty, skipping')
@@ -256,7 +288,7 @@ async function runAutoPublish(): Promise<NextResponse> {
 
   const startedAt = new Date().toISOString()
   try {
-    const result = await processSingleItem(head)
+    const result = await processSingleItem(head, overrides)
     // 成功したのでキューから正式に除去
     await shiftAutoRunItem()
     const finishedAt = new Date().toISOString()
@@ -309,7 +341,7 @@ export async function POST(request: NextRequest) {
   if (!isCronAuthorized(request)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
-  return runAutoPublish()
+  return runAutoPublish(parseOverrides(request))
 }
 
 /** GET も許容（GitHub Actions 側の curl が GET でも動作するように保険） */
@@ -317,5 +349,5 @@ export async function GET(request: NextRequest) {
   if (!isCronAuthorized(request)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
   }
-  return runAutoPublish()
+  return runAutoPublish(parseOverrides(request))
 }
