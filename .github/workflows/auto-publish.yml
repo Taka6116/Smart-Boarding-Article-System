@@ -1,0 +1,52 @@
+name: Auto Publish Article
+
+# JST 火・金 10:00（= UTC 01:00 TUE,FRI）に /api/auto-publish/run を叩いて
+# キュー先頭 1 件を「予約投稿（Cron 実行から 2 時間後）」として WordPress に自動投稿する。
+#
+# 備考:
+#   - schedule は多少遅延することがある（GitHub Actions の仕様）。公開は 2 時間後なので実用上問題なし。
+#   - workflow_dispatch から手動実行して初回テストを行う。
+#   - タイムアウトは 10 分（= Vercel 側の maxDuration=300s + ネットワーク/リトライ余裕）。
+
+on:
+  schedule:
+    - cron: '0 1 * * 2,5'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trigger-auto-publish:
+    name: Trigger Vercel /api/auto-publish/run
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Call Vercel auto-publish endpoint
+        env:
+          AUTOPUBLISH_URL: ${{ secrets.AUTOPUBLISH_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${AUTOPUBLISH_URL}" ] || [ -z "${CRON_SECRET}" ]; then
+            echo "::error::Repository secrets AUTOPUBLISH_URL / CRON_SECRET が未設定です"
+            exit 1
+          fi
+
+          echo "[auto-publish] POST ${AUTOPUBLISH_URL}"
+          http_code=$(curl -sS -o response.json -w "%{http_code}" \
+            -X POST "${AUTOPUBLISH_URL}" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json" \
+            --max-time 600)
+
+          echo "[auto-publish] HTTP ${http_code}"
+          echo "----- response.json -----"
+          cat response.json || true
+          echo
+          echo "-------------------------"
+
+          if [ "${http_code}" != "200" ]; then
+            echo "::error::auto-publish 呼び出しが失敗しました（HTTP ${http_code}）"
+            exit 1
+          fi

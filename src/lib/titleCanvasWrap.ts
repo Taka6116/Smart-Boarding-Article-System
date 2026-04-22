@@ -69,9 +69,17 @@ function lineEndProhibited(lastGrapheme: string): boolean {
   return LINE_END_PROHIBITED.has(ch)
 }
 
+/**
+ * ブラウザ Canvas とサーバ (@napi-rs/canvas) 両方を受けられる最小 measureText インターフェース。
+ * サーバサイド合成では CanvasRenderingContext2D 型が存在しないため、構造的互換だけを要求する。
+ */
+export interface MeasurableContext {
+  measureText: (text: string) => { width: number }
+}
+
 /** 1 グラフェムだけの行や短い 2 グラフェム行を前行に結合（例: 「成功戦」+「略」） */
 function collapseOrphanTailLines(
-  ctx: CanvasRenderingContext2D,
+  ctx: MeasurableContext,
   lines: string[],
   maxW: number,
 ): string[] {
@@ -101,7 +109,7 @@ function collapseOrphanTailLines(
 }
 
 function wrapSegment(
-  ctx: CanvasRenderingContext2D,
+  ctx: MeasurableContext,
   graphemes: readonly string[],
   maxW: number,
   maxLines: number,
@@ -173,7 +181,7 @@ function wrapSegment(
 }
 
 export function wrapTitleLines(
-  ctx: CanvasRenderingContext2D,
+  ctx: MeasurableContext,
   titleText: string,
   maxW: number,
   opts?: { maxLines?: number },
