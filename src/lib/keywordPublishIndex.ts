@@ -10,7 +10,7 @@ export interface KeywordWpEntry {
   displayPart: string
   wordpressUrl?: string
   title: string
-  postStatus: 'publish' | 'future'
+  postStatus: 'publish' | 'future' | 'draft'
 }
 
 function parseWpInstant(isoOrWp: string | undefined, fallback: string): number {
@@ -36,15 +36,18 @@ export function buildKeywordWpEntriesByKeyword(articles: SavedArticle[]): Map<st
     if (!kw) continue
 
     const st = a.wordpressPostStatus
-    if (st !== 'publish' && st !== 'future') continue
-    if (!a.wordpressUrl?.trim()) continue
+    if (st !== 'publish' && st !== 'future' && st !== 'draft') continue
+    // draft は wordpressUrl がなくてもよい（ID から判別できないため title のみ表示）
 
     const instant = parseWpInstant(a.wordpressPublishedAt, a.createdAt)
     if (Number.isNaN(instant)) continue
 
     const d = new Date(instant)
     const md = `${d.getMonth() + 1}/${d.getDate()}`
-    const displayPart = st === 'future' ? `${md}予定` : md
+    const displayPart =
+      st === 'future' ? `${md}（予約）` :
+      st === 'draft'  ? `${md}（下書）` :
+      `${md}（公開）`
 
     const arr = map.get(kw) ?? []
     arr.push({
@@ -52,7 +55,7 @@ export function buildKeywordWpEntriesByKeyword(articles: SavedArticle[]): Map<st
       displayPart,
       wordpressUrl: a.wordpressUrl,
       title: (a.refinedTitle || a.title || '').trim() || '(無題)',
-      postStatus: st,
+      postStatus: st as 'publish' | 'future' | 'draft',
     })
     map.set(kw, arr)
   }
@@ -71,17 +74,19 @@ export function keywordActionButtonLabel(entries: KeywordWpEntry[] | undefined):
     return { line: '', tooltip: '' }
   }
   const parts = entries.map(e => e.displayPart)
-  const hasFuture = entries.some(e => e.postStatus === 'future')
+  const hasFuture  = entries.some(e => e.postStatus === 'future')
   const hasPublish = entries.some(e => e.postStatus === 'publish')
+  const hasDraft   = entries.some(e => e.postStatus === 'draft')
   let suffix = '公開済み'
-  if (hasFuture && !hasPublish) suffix = '予約済み'
+  if (hasDraft && !hasFuture && !hasPublish) suffix = '下書き'
+  else if (hasFuture && !hasPublish) suffix = '予約済み'
   else if (hasFuture && hasPublish) suffix = '公開・予約'
 
   const tooltip = entries
     .map(e => {
-      const kind = e.postStatus === 'future' ? '予約' : '公開'
+      const kind = e.postStatus === 'future' ? '予約' : e.postStatus === 'draft' ? '下書き' : '公開'
       const link = e.wordpressUrl ? `\n${e.wordpressUrl}` : ''
-      return `${e.displayPart}（${kind}）${e.title}${link}`
+      return `${e.displayPart} ${kind}：${e.title}${link}`
     })
     .join('\n\n')
 

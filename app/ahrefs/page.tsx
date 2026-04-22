@@ -509,7 +509,7 @@ export default function AhrefsPage() {
                 <table className="w-full text-sm table-fixed">
                   <thead>
                     <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
-                      <th style={{ width: isOrganicTab ? '17%' : '26%' }} className="text-left py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('keyword')}>
+                      <th style={{ width: isOrganicTab ? '17%' : '20%' }} className="text-left py-3 px-4 font-semibold text-[#64748B] cursor-pointer select-none" onClick={() => handleSort('keyword')}>
                         <span className="inline-flex items-center gap-1 flex-wrap">
                           <span className="inline-flex items-center gap-1">キーワード <SortIcon field="keyword" /></span>
                           <span onClick={e => e.stopPropagation()} className="inline-flex">
@@ -593,7 +593,7 @@ export default function AhrefsPage() {
                           </span>
                         </span>
                       </th>
-                      <th style={{ width: isOrganicTab ? '10%' : '10%' }} className="text-center py-3 px-4 font-semibold text-[#64748B]">
+                      <th style={{ width: isOrganicTab ? '10%' : '14%' }} className="text-center py-3 px-4 font-semibold text-[#64748B]">
                         <span className="inline-flex items-center justify-center gap-1 w-full">
                           アクション
                           <span onClick={e => e.stopPropagation()} className="inline-flex">
@@ -647,21 +647,22 @@ export default function AhrefsPage() {
                               return <span className="text-[#CBD5E1] text-xs">-</span>
                             }
                             const latest = entries[entries.length - 1]!
-                            const md = latest.displayPart.replace(/予定$/, '')
-                            const kind = latest.postStatus === 'future' ? '予約' : '公開'
                             const tooltip = entries
                               .map(e => {
-                                const k = e.postStatus === 'future' ? '予約' : '公開'
                                 const link = e.wordpressUrl ? `\n${e.wordpressUrl}` : ''
-                                return `${e.displayPart}（${k}）${e.title}${link}`
+                                return `${e.displayPart}：${e.title}${link}`
                               })
                               .join('\n\n')
+                            const color =
+                              latest.postStatus === 'publish' ? 'text-green-700' :
+                              latest.postStatus === 'future'  ? 'text-purple-700' :
+                              'text-[#64748B]'
                             return (
                               <span
                                 title={tooltip}
-                                className="inline-flex items-center gap-0.5 text-xs text-[#475569] font-medium whitespace-nowrap"
+                                className={`inline-flex items-center gap-0.5 text-xs font-medium whitespace-nowrap ${color}`}
                               >
-                                {md}<span className="text-[#94A3B8]">（{kind}）</span>
+                                {latest.displayPart}
                               </span>
                             )
                           })()}
