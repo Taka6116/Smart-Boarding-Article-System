@@ -22,6 +22,7 @@ import {
   normalizeKeywordForArticleMatch,
   type KeywordWpEntry,
 } from '@/lib/keywordPublishIndex'
+import { generateAutoPrompt } from '@/lib/ahrefsAutoPrompt'
 
 type SortKey = 'priority' | 'score' | 'volume' | 'kd' | 'cpc' | 'keyword' | 'position' | 'trafficChange'
 type Tab = 'opportunities' | 'trends' | 'organic'
@@ -50,119 +51,13 @@ const AHREFS_COLUMN_HINTS = {
   position: 'オーガニック検索での現在の順位（Site Explorer）。',
   trafficChange: '推定オーガニックトラフィックの前回比の変化。',
   category: 'テーマ分類（Ahrefsのカテゴリ列、またはアプリのルールベース分類）。',
+  postedDate: 'このKWで保存済み記事がWordPressに公開・予約されている場合の日付。自動投稿（火・金 10:00 cron）はこのテーブルを優先度・スコア順に先頭から消化します。',
   action: '記事作成画面へ。保存済み記事とKWが一致する場合は公開日などを表示。',
   trendPrevVol: '前回インポートしたKW調査CSVにおける月間検索ボリューム（Volume）。',
   trendCurrVol: '最新のKW調査CSVにおける月間検索ボリューム（Volume）。',
   trendChangeRate: '前回Volに対する今回Volの変化率（％）。本一覧は+20%超の上昇のみ表示。',
   trendStatus: 'NEW＝前回CSVに無かったキーワード。上昇＝前回比で検索ボリュームが大きく増えたキーワード。',
 } as const
-
-function generateAutoPrompt(row: ScoredKeyword): string {
-  const volStrategy = row.volume > 5000
-    ? '包括的かつ網羅的な内容にすること。幅広い検索クエリに対応できるよう、複数の切り口で構成すること。'
-    : row.volume > 1000
-    ? '幅広い検索意図をカバーする構成にすること。主要な疑問を網羅しつつ、専門性も示すこと。'
-    : row.volume > 300
-    ? 'ニッチな専門性と具体性で上位を狙えるテーマ。実務者が即活用できる情報を重視すること。'
-    : '深い専門知識と具体的な事例で差別化すること。ロングテールKWとして確実に上位を取る構成にすること。'
-
-  const kdStrategy = row.kd <= 10
-    ? '競合がほぼ不在のため、基本を丁寧に押さえれば上位表示が見込めます。網羅性と読みやすさを重視してください。'
-    : row.kd <= 30
-    ? '独自視点・独自の切り口で差別化すれば上位の勝算があります。他社記事にはない具体例や数値を入れてください。'
-    : row.kd <= 50
-    ? '競合が多いテーマです。実体験・具体的数値・独自フレームワークでの差別化が必要です。'
-    : '競合が非常に強いテーマです。現場知見・独自データ・E-E-A-T要素での差別化が必須です。'
-
-  const trendNote = row.trend === 'up'
-    ? `\n※トレンド注記: このKWは検索ボリュームが上昇傾向（${row.trendChangePercent > 0 ? '+' : ''}${row.trendChangePercent}%）にあります。最新のトレンドや動向を積極的に盛り込んでください。`
-    : row.trend === 'down'
-    ? `\n※トレンド注記: このKWは検索ボリュームが下降傾向（${row.trendChangePercent}%）です。定番・基本情報としての価値を重視し、エバーグリーンコンテンツとして設計してください。`
-    : ''
-
-  const priorityLabel = row.priority === 3 ? '★★★ 即攻め' : row.priority === 2 ? '★★ 有望' : row.priority === 1 ? '★ 余力あれば' : '低'
-
-  const categoryIntents: Record<string, string> = {
-    '人材育成': '\n・人材育成の体系的な方法論・最新トレンドを知りたい\n・自社の育成計画を見直したい・改善したい',
-    'eラーニング': '\n・eラーニング導入のメリット・デメリットを比較したい\n・効果的なオンライン学習の設計方法を知りたい',
-    '研修': '\n・研修の企画・設計・評価の方法を体系的に知りたい\n・研修効果を最大化するための工夫を知りたい',
-    'オンボーディング': '\n・新入社員の早期戦力化のための仕組みを知りたい\n・オンボーディングプログラムの設計・改善方法を知りたい',
-    'マネジメント': '\n・管理職として必要なスキル・マインドセットを知りたい\n・部下育成や1on1ミーティングの効果的な方法を知りたい',
-    '評価・制度': '\n・人事評価制度の設計・運用のベストプラクティスを知りたい\n・MBO/OKRなど目標管理手法の導入方法を知りたい',
-    'DX・IT': '\n・DX推進に必要な人材育成の方法を知りたい\n・デジタルスキル向上のための研修設計を知りたい',
-    'コンプライアンス': '\n・ハラスメント防止研修の効果的な設計方法を知りたい\n・コンプライアンス教育の最新アプローチを知りたい',
-    'エンゲージメント': '\n・従業員エンゲージメント向上の施策を知りたい\n・離職防止・リテンション施策の具体例を知りたい',
-    'OJT': '\n・OJTの体系的な設計・運用方法を知りたい\n・OJTトレーナーの育成方法を知りたい',
-  }
-
-  const additionalIntents = categoryIntents[row.assignedCategory] ?? ''
-
-  return `■ロール設定
-あなたはSmart Boarding（スマートボーディング）／株式会社FCEの上級コンテンツ戦略コンサルタントです。SEO・LLMOの専門知見に基づき、検索ユーザーのペインを的確に解決しながら、Smart Boardingのサービスへの自然な導線を設計してください。
-
-■目的
-- 検索流入を獲得する（SEO最適化）
-- E-E-A-T（経験・専門性・権威性・信頼性）を示す
-- 読者の具体的なペインを解決する
-
-■テーマ
-「${row.keyword}」
-
-■KWデータに基づく執筆方針
-- ターゲットキーワード: ${row.keyword}
-- 月間検索ボリューム: ${row.volume.toLocaleString()}
-- キーワード難易度(KD): ${row.kd}
-- CPC: ¥${row.cpc}
-- カテゴリ: ${row.assignedCategory}
-- 優先度: ${priorityLabel}
-
-【Volume戦略】${volStrategy}
-【KD戦略】${kdStrategy}
-【CPC戦略】CPC ¥${row.cpc} — ${row.cpc >= 500 ? '商業的意図が非常に強いKWです。CTAを明確に設計し、サービス紹介セクションを充実させてください。' : row.cpc >= 100 ? '商業的意図があるKWです。記事後半に自然なCTAを設置してください。' : '情報収集段階のKWです。まず信頼を獲得し、CTAは控えめに。'}
-${trendNote}
-
-■検索意図の整理
-このKWで検索するユーザーが知りたいこと：
-・「${row.keyword}」の基本的な意味・概要を理解したい
-・具体的なやり方・手順・方法を知りたい
-・導入メリット・効果を理解したい
-・成功事例・失敗事例から学びたい${additionalIntents}
-
-■ターゲット
-人事担当者、研修企画者、人材育成責任者、経営層
-
-■必須条件
-1. S3に格納された参照資料（社内ナレッジ・過去記事）を必ず参照し、Smart Boardingの知見を反映すること
-2. 実務で即使える具体的な手順・チェックリスト・フレームワークを含めること
-3. 統計データや調査結果を引用する場合は出典を明記すること
-4. Smart Boardingの強み（法人向けオンライントレーニング × 人財コンサルティング × 実践型プログラム）を自然に組み込むこと
-
-■構成要件（SEO・LLMO最適化）
-- タイトル: 32文字以内、ターゲットKWを含む
-- 大見出し: 5〜8セクション。各行の先頭を必ず「1. 」「2. 」のように半角数字＋「.」または「．」＋半角スペースで始めること（プレビュー・編集画面の見出しスタイルと一致させるため）。各見出し文にKWまたは関連語を含めること
-- 小見出し: 各大見出し配下に2〜4個。「1-1. 」「1-2. 」の形式で行頭を揃えること
-- 本文: 4,000〜8,000文字
-- 箇条書きは「・」で統一する（Markdownの * や - リストは使わない）。表が必要な場合は文章で表現するか、簡潔な「・」列挙に留める
-- 冒頭200文字以内にKWと記事の結論を含める
-
-■品質要件
-- 中学生でも理解できる平易な日本語
-- 一文は60文字以内を目安
-- 「です・ます」調で統一
-- 具体例・数値を豊富に含める
-
-■SEO・LLMO要件
-- メタディスクリプション: 120文字以内
-- ターゲットKWの自然な出現（キーワード密度1〜3%）
-- 関連キーワードの自然な散りばめ
-- FAQ構造化データに適した Q&A セクションを含める
-
-■出力形式（編集システム・プレビューと厳密に整合させること）
-- Markdownの見出し（## 等）は使わない。システムが除去するため見出しとして表示されない
-- 本文はプレーンテキスト中心。太字が必要な場合のみ **文言** の形式（乱用しない）
-- 記事の流れ: リード文（数段落）→「1. 」から始まる大見出しと本文を交互に繰り返す → まとめ → FAQ（Q. / A. 形式）
-- 大見出し行には太字や「**ラベル:**」形式を詰め込まない。見出しは短い一行にし、要約や詳細は次行以降の段落に書く`
-}
 
 export default function AhrefsPage() {
   const router = useRouter()
@@ -682,7 +577,7 @@ export default function AhrefsPage() {
                           </th>
                         </>
                       )}
-                      <th style={{ width: isOrganicTab ? '9%' : '12%' }} className="text-center py-3 px-4 font-semibold text-[#64748B]">
+                      <th style={{ width: isOrganicTab ? '9%' : '10%' }} className="text-center py-3 px-4 font-semibold text-[#64748B]">
                         <span className="inline-flex items-center justify-center gap-1 w-full">
                           カテゴリ
                           <span onClick={e => e.stopPropagation()} className="inline-flex">
@@ -690,7 +585,15 @@ export default function AhrefsPage() {
                           </span>
                         </span>
                       </th>
-                      <th style={{ width: isOrganicTab ? '12%' : '12%' }} className="text-center py-3 px-4 font-semibold text-[#64748B]">
+                      <th style={{ width: isOrganicTab ? '9%' : '10%' }} className="text-center py-3 px-4 font-semibold text-[#64748B]">
+                        <span className="inline-flex items-center justify-center gap-1 w-full">
+                          投稿日
+                          <span onClick={e => e.stopPropagation()} className="inline-flex">
+                            <ColumnHint text={AHREFS_COLUMN_HINTS.postedDate} />
+                          </span>
+                        </span>
+                      </th>
+                      <th style={{ width: isOrganicTab ? '10%' : '10%' }} className="text-center py-3 px-4 font-semibold text-[#64748B]">
                         <span className="inline-flex items-center justify-center gap-1 w-full">
                           アクション
                           <span onClick={e => e.stopPropagation()} className="inline-flex">
@@ -736,6 +639,32 @@ export default function AhrefsPage() {
                           <span className="px-2 py-0.5 rounded-full text-xs bg-[#F1F5F9] text-[#64748B] font-medium truncate inline-block max-w-full">
                             {kw.assignedCategory}
                           </span>
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          {(() => {
+                            const entries = kwWpEntriesByNorm.get(normalizeKeywordForArticleMatch(kw.keyword))
+                            if (!entries?.length) {
+                              return <span className="text-[#CBD5E1] text-xs">-</span>
+                            }
+                            const latest = entries[entries.length - 1]!
+                            const md = latest.displayPart.replace(/予定$/, '')
+                            const kind = latest.postStatus === 'future' ? '予約' : '公開'
+                            const tooltip = entries
+                              .map(e => {
+                                const k = e.postStatus === 'future' ? '予約' : '公開'
+                                const link = e.wordpressUrl ? `\n${e.wordpressUrl}` : ''
+                                return `${e.displayPart}（${k}）${e.title}${link}`
+                              })
+                              .join('\n\n')
+                            return (
+                              <span
+                                title={tooltip}
+                                className="inline-flex items-center gap-0.5 text-xs text-[#475569] font-medium whitespace-nowrap"
+                              >
+                                {md}<span className="text-[#94A3B8]">（{kind}）</span>
+                              </span>
+                            )
+                          })()}
                         </td>
                         <td className="py-3 px-4 text-center">
                           {(() => {

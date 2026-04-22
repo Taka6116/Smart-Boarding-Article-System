@@ -1,11 +1,19 @@
 /**
- * 自動投稿オーケストレーター。
+ * 自動投稿オーケストレーター v2（KW テーブル駆動）。
  * GitHub Actions の cron ワークフロー（火・金 JST 10:00）から Bearer CRON_SECRET 付きで叩かれる。
  *
- * 1 リクエスト = 1 記事。処理：
+ * 【v2 の方針】
+ * - キューは廃止。代わりに「Ahrefs KW 分析テーブル（最新 type=keywords データセット）」を
+ *   優先度降順・スコア降順で並び替え、先頭から "未投稿" の KW を 1 件選ぶ。
+ * - "未投稿" の判定は buildKeywordWpEntriesByKeyword（SavedArticle.targetKeyword との正規化突合）で、
+ *   /ahrefs 画面の投稿日列とまったく同じロジックを使う。
+ * - 3 回連続失敗した KW は autorun/skipped.json に昇格し、以後自動選択対象外。
+ *
+ * 【1 リクエスト = 1 記事】
  *   1. Authorization: Bearer ${CRON_SECRET} を検証
- *   2. autorun/queue.json の先頭 1 件を peek
- *   3. 対応する prompts/<id>.json を読み込み
+ *   2. pickNextKeyword() で最新データセットから未投稿 KW の先頭を選ぶ
+ *   3. generateAutoPrompt(kw) で記事生成プロンプトを合成
+ *      （/ahrefs の「記事作成」ボタン押下時と完全に同一の関数・同一の文言）
  *   4. generateFirstDraftFromPrompt（Gemini → Claude フォールバック）
  *   5. refineArticleWithGemini
  *   6. generateSlugFromGemini
@@ -13,20 +21,22 @@
  *   8. compositeArticleTitleOnImageServer（@napi-rs/canvas でタイトル焼き込み）
  *   9. WordPress メディアにアップロード
  *  10. postToWordPress(status='future', scheduledDate = now + 2h)
- *  11. SavedArticle を articles/<id>.json に保存
- *  12. キューから shift、history へ success を記録
+ *  11. SavedArticle を articles/<id>.json に保存（targetKeyword に kw.keyword を必ず入れる。
+ *      これにより次回の /ahrefs 表示で投稿日列に反映される）
+ *  12. clearFailure(kw) で失敗カウントを消す / history に success
  *
- * 失敗時：history に failed を記録し、先頭に failureCount++ で戻す（3 回連続失敗で drop）。
+ * 失敗時：
+ *  - history に failed
+ *  - recordFailure(kw) で autorun/failures.json をインクリメント
+ *  - 3 回目で autorun/skipped.json に昇格（以降自動選択されない）
+ *
+ * テスト用クエリオーバーライド（いずれも CRON_SECRET 必須）：
+ *  - ?status=draft|publish|future  (デフォルト future)
+ *  - ?delayMinutes=N               (デフォルト 2h = 120 分)
  */
 import { NextRequest, NextResponse } from 'next/server'
-import { getS3ObjectAsText, putS3Object } from '@/lib/s3Reference'
-import {
-  peekAutoRunItem,
-  shiftAutoRunItem,
-  requeueHeadAfterFailure,
-  appendAutoRunHistory,
-  type AutoRunQueueItem,
-} from '@/lib/autoRunQueue'
+import { putS3Object } from '@/lib/s3Reference'
+import { appendAutoRunHistory } from '@/lib/autoRunQueue'
 import {
   generateFirstDraftFromPrompt,
   refineArticleWithGemini,
@@ -36,20 +46,25 @@ import { generateArticleImage } from '@/lib/imageGeneration'
 import { compositeArticleTitleOnImageServer } from '@/lib/compositeArticleTitleOnImageServer'
 import { postToWordPress } from '@/lib/wordpress'
 import type { SavedArticle } from '@/lib/types'
+import { loadLatestKeywordsDataset } from '@/lib/ahrefsDataset'
+import { analyzeKeywords, type ScoredKeyword } from '@/lib/ahrefsAnalyzer'
+import { generateAutoPrompt } from '@/lib/ahrefsAutoPrompt'
+import { getAllArticles } from '@/lib/articleStorage'
+import {
+  buildKeywordWpEntriesByKeyword,
+  normalizeKeywordForArticleMatch,
+} from '@/lib/keywordPublishIndex'
+import {
+  clearFailure,
+  getSkippedKeywordSet,
+  recordFailure,
+} from '@/lib/autoRunFailures'
 
 /** Node runtime 必須（@napi-rs/canvas と aws-sdk がバンドル対象） */
 export const runtime = 'nodejs'
 /** 最大実行時間（Vercel Hobby は 300 秒が上限。画像 & 推敲 & WP 投稿込みで 120〜180 秒程度） */
 export const maxDuration = 300
 export const dynamic = 'force-dynamic'
-
-interface SavedPromptS3 {
-  id: string
-  title: string
-  content: string
-  createdAt: string
-  updatedAt: string
-}
 
 function getScheduledDelayHours(): number {
   const raw = process.env.AUTO_PUBLISH_SCHEDULE_DELAY_HOURS?.trim()
@@ -100,7 +115,6 @@ function isCronAuthorized(request: NextRequest): boolean {
   const header = request.headers.get('authorization') ?? ''
   const bearer = header.startsWith('Bearer ') ? header.slice(7).trim() : ''
   if (bearer && bearer === expected) return true
-  // Vercel Cron 系の互換：?secret=xxx も許容（今回は未使用だが保険）
   const url = new URL(request.url)
   const q = url.searchParams.get('secret')?.trim()
   return q === expected
@@ -111,15 +125,37 @@ function estimateWordCount(content: string): number {
   return content.replace(/\s+/g, '').length
 }
 
-async function loadPromptById(promptId: string): Promise<SavedPromptS3 | null> {
-  const key = `prompts/${promptId}.json`
-  const result = await getS3ObjectAsText(key)
-  if (!result) return null
-  try {
-    return JSON.parse(result.content) as SavedPromptS3
-  } catch {
-    return null
+/**
+ * 最新の狙い目KW データセットから「まだ未投稿 & skipped にもなっていない」KW の
+ * 優先度降順・スコア降順の先頭 1 件を返す。無ければ null。
+ */
+async function pickNextKeyword(): Promise<{
+  kw: ScoredKeyword | null
+  reason?: 'no-dataset' | 'all-done'
+}> {
+  const latest = await loadLatestKeywordsDataset()
+  if (!latest || !latest.keywords?.length) {
+    return { kw: null, reason: 'no-dataset' }
   }
+
+  const scored = analyzeKeywords(latest.keywords).slice().sort((a, b) => {
+    if (b.priority !== a.priority) return b.priority - a.priority
+    return b.score - a.score
+  })
+
+  const [articles, skippedSet] = await Promise.all([
+    getAllArticles(),
+    getSkippedKeywordSet(),
+  ])
+  const postedIndex = buildKeywordWpEntriesByKeyword(articles)
+
+  for (const kw of scored) {
+    const normKey = normalizeKeywordForArticleMatch(kw.keyword)
+    if (postedIndex.has(normKey)) continue
+    if (skippedSet.has(normKey)) continue
+    return { kw }
+  }
+  return { kw: null, reason: 'all-done' }
 }
 
 async function uploadImageToWordPressMedia(
@@ -161,8 +197,8 @@ async function uploadImageToWordPressMedia(
   return { mediaId: media.id, sourceUrl }
 }
 
-async function processSingleItem(
-  item: AutoRunQueueItem,
+async function processKeyword(
+  kw: ScoredKeyword,
   overrides: RunOverrides = {},
 ): Promise<{
   articleId: string
@@ -171,51 +207,42 @@ async function processSingleItem(
   scheduledFor: string
   status: 'draft' | 'publish' | 'future'
 }> {
-  console.log('[auto-publish] start item', {
-    id: item.id,
-    promptId: item.promptId,
-    keyword: item.keyword,
+  console.log('[auto-publish v2] start keyword', {
+    keyword: kw.keyword,
+    priority: kw.priority,
+    score: kw.score,
+    category: kw.assignedCategory,
   })
 
-  const promptRow = await loadPromptById(item.promptId)
-  if (!promptRow || !promptRow.content?.trim()) {
-    throw new Error(`プロンプト ${item.promptId} が S3 に存在しないか空です`)
-  }
+  // 1. 画面の「記事作成」ボタンと完全に同一のプロンプトを合成
+  const autoPrompt = generateAutoPrompt(kw)
 
-  // 1. 一次執筆（Gemini → 失敗時 Claude フォールバックは gemini.ts 側で処理）
-  const draft = await generateFirstDraftFromPrompt(
-    promptRow.content,
-    item.keyword,
-    undefined, // 自動投稿では現状 S3 資料の自動参照は行わない（プロンプト本文で完結）
-  )
+  // 2. 一次執筆（Gemini → 失敗時 Claude フォールバックは gemini.ts 側で処理）
+  const draft = await generateFirstDraftFromPrompt(autoPrompt, kw.keyword, undefined)
 
-  // 2. 推敲
-  const refined = await refineArticleWithGemini(draft.title, draft.content, item.keyword)
+  // 3. 推敲
+  const refined = await refineArticleWithGemini(draft.title, draft.content, kw.keyword)
 
-  // 3. スラッグ
-  const slug = await generateSlugFromGemini(
-    refined.refinedTitle,
-    item.keyword,
-    refined.refinedContent,
-  )
+  // 4. スラッグ
+  const slug = await generateSlugFromGemini(refined.refinedTitle, kw.keyword, refined.refinedContent)
 
-  // 4. 画像生成
+  // 5. 画像生成
   const image = await generateArticleImage({
     title: refined.refinedTitle,
     content: refined.refinedContent,
   })
 
-  // 5. タイトル焼き込み
+  // 6. タイトル焼き込み
   const composited = await compositeArticleTitleOnImageServer(image.buffer, refined.refinedTitle)
 
-  // 6. WordPress メディアアップロード
+  // 7. WordPress メディアアップロード
   const media = await uploadImageToWordPressMedia(
     composited.buffer,
     composited.mimeType,
-    item.keyword.slice(0, 40),
+    kw.keyword.slice(0, 40),
   )
 
-  // 7. WordPress へ投稿（デフォルト: future+2h、オーバーライド可）
+  // 8. WordPress へ投稿（デフォルト: future+2h、オーバーライド可）
   const wpStatus: 'draft' | 'publish' | 'future' = overrides.status ?? 'future'
   const scheduledFor =
     wpStatus === 'future' ? computeScheduledDate(overrides.delayMinutes) : new Date().toISOString()
@@ -223,27 +250,27 @@ async function processSingleItem(
     {
       title: refined.refinedTitle,
       content: refined.refinedContent,
-      targetKeyword: item.keyword,
+      targetKeyword: kw.keyword,
       slug,
-      ...(item.wordpressTags ? { wordpressTags: item.wordpressTags } : {}),
     },
     wpStatus,
     {
       ...(wpStatus === 'future' ? { scheduledDate: scheduledFor } : {}),
       preUploadedMediaId: media.mediaId,
       preUploadedImageUrl: media.sourceUrl,
-      ...(item.wordpressCategoryIds ? { categoryIds: item.wordpressCategoryIds } : {}),
     },
   )
 
-  // 8. SavedArticle を S3 に保存
+  // 9. SavedArticle を S3 に保存
+  //    targetKeyword と wordpressPostStatus が入っていれば、次回の /ahrefs 画面表示時に
+  //    「投稿日」列が自動で反映される（buildKeywordWpEntriesByKeyword が拾う）
   const articleId = `auto-${Date.now()}`
   const nowIso = new Date().toISOString()
   const saved: SavedArticle = {
     id: articleId,
     title: refined.refinedTitle,
     refinedTitle: refined.refinedTitle,
-    targetKeyword: item.keyword,
+    targetKeyword: kw.keyword,
     originalContent: draft.content,
     refinedContent: refined.refinedContent,
     imageUrl: media.sourceUrl,
@@ -254,16 +281,15 @@ async function processSingleItem(
     slug,
     wordpressPostStatus: postResult.status,
     wordCount: estimateWordCount(refined.refinedContent),
-    ...(item.wordpressTags ? { wordpressTags: item.wordpressTags } : {}),
-    ...(item.wordpressCategoryIds ? { wordpressCategoryIds: item.wordpressCategoryIds } : {}),
   }
   await putS3Object(`articles/${articleId}.json`, JSON.stringify(saved), 'application/json')
 
-  console.log('[auto-publish] posted', {
+  console.log('[auto-publish v2] posted', {
     articleId,
     wordpressPostId: postResult.id,
     wordpressUrl: postResult.link,
     scheduledFor,
+    status: wpStatus,
   })
 
   return {
@@ -276,26 +302,28 @@ async function processSingleItem(
 }
 
 async function runAutoPublish(overrides: RunOverrides = {}): Promise<NextResponse> {
-  const head = await peekAutoRunItem()
-  if (!head) {
-    console.log('[auto-publish] queue is empty, skipping')
+  const picked = await pickNextKeyword()
+  if (!picked.kw) {
+    console.log(`[auto-publish v2] skipped (reason=${picked.reason})`)
     return NextResponse.json({
       ok: true,
       skipped: true,
-      reason: 'queue-empty',
+      reason: picked.reason,
     })
   }
 
+  const kw = picked.kw
   const startedAt = new Date().toISOString()
+  const runId = `run-${Date.now()}`
+
   try {
-    const result = await processSingleItem(head, overrides)
-    // 成功したのでキューから正式に除去
-    await shiftAutoRunItem()
+    const result = await processKeyword(kw, overrides)
+    await clearFailure(kw.keyword)
     const finishedAt = new Date().toISOString()
     await appendAutoRunHistory({
-      itemId: head.id,
-      promptId: head.promptId,
-      keyword: head.keyword,
+      itemId: runId,
+      promptId: 'auto-from-ahrefs-kw',
+      keyword: kw.keyword,
       startedAt,
       finishedAt,
       status: 'success',
@@ -307,30 +335,32 @@ async function runAutoPublish(overrides: RunOverrides = {}): Promise<NextRespons
     return NextResponse.json({
       ok: true,
       skipped: false,
-      item: { id: head.id, promptId: head.promptId, keyword: head.keyword },
+      keyword: kw.keyword,
+      priority: kw.priority,
+      score: kw.score,
       result,
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
-    console.error('[auto-publish] failed:', message)
+    console.error('[auto-publish v2] failed:', message)
     const finishedAt = new Date().toISOString()
     await appendAutoRunHistory({
-      itemId: head.id,
-      promptId: head.promptId,
-      keyword: head.keyword,
+      itemId: runId,
+      promptId: 'auto-from-ahrefs-kw',
+      keyword: kw.keyword,
       startedAt,
       finishedAt,
       status: 'failed',
       error: message,
     })
-    const { requeued, failureCount } = await requeueHeadAfterFailure(head, message)
+    const { count, promotedToSkipped } = await recordFailure(kw.keyword, message)
     return NextResponse.json(
       {
         ok: false,
-        item: { id: head.id, promptId: head.promptId, keyword: head.keyword },
+        keyword: kw.keyword,
         error: message,
-        requeued,
-        failureCount,
+        failureCount: count,
+        promotedToSkipped,
       },
       { status: 500 },
     )
