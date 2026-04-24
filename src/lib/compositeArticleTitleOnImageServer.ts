@@ -23,6 +23,7 @@ type NapiCanvas = {
       font: string
       shadowColor: string
       shadowBlur: number
+      textAlign: string
       fillText: (text: string, x: number, y: number) => void
       measureText: (text: string) => { width: number }
     }
@@ -88,7 +89,7 @@ export async function compositeArticleTitleOnImageServer(
 
   ctx.drawImage(img, 0, 0, W, H)
 
-  const gradH = H * 0.58
+  const gradH = H * 0.75
   const grad = ctx.createLinearGradient(0, H - gradH, 0, H)
   grad.addColorStop(0, 'rgba(0,0,0,0)')
   grad.addColorStop(1, 'rgba(0,0,0,0.74)')
@@ -97,7 +98,7 @@ export async function compositeArticleTitleOnImageServer(
 
   const pad = W * 0.04
   const maxW = W - pad * 2
-  const fontSize = Math.round(W * 0.036)
+  const fontSize = Math.round(W * 0.055)
   ctx.font = `bold ${fontSize}px "NotoSansJPBold","Noto Sans JP","Hiragino Sans","Yu Gothic",sans-serif`
   ctx.fillStyle = '#FFFFFF'
   ctx.shadowColor = 'rgba(0,0,0,0.55)'
@@ -107,10 +108,12 @@ export async function compositeArticleTitleOnImageServer(
 
   const lh = fontSize * 1.42
   const totalH = lines.length * lh
-  const startY = H - pad - totalH + fontSize
+  const centerX = W / 2
+  const startY = H * 0.55 - totalH / 2 + fontSize
 
+  ctx.textAlign = 'center'
   lines.forEach((line, i) => {
-    ctx.fillText(line, pad, startY + i * lh)
+    ctx.fillText(line, centerX, startY + i * lh)
   })
 
   const buffer = canvas.toBuffer('image/jpeg', 92)
