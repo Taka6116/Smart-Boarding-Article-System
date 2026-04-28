@@ -31,6 +31,11 @@ function normalizeNumberedHeadingLine(line: string): string {
   return s
 }
 
+/** 単独の区切り記号行はプレビュー本文に出さない */
+function isDecorativeSeparatorLine(trimmed: string): boolean {
+  return /^[\-—―–─━=*＊]{1,10}$/.test(trimmed)
+}
+
 function formatContent(content: string): string {
   const H2_STYLE =
     "font-size:22px;font-weight:700;margin:48px 0 16px;padding-bottom:8px;border-bottom:2px solid #33B5E5;font-family:'Noto Sans JP',sans-serif;"
@@ -50,7 +55,11 @@ function formatContent(content: string): string {
 
   const flushParagraph = () => {
     if (currentParagraph.length === 0) return
-    const raw = currentParagraph.join('<br>').trim()
+    const raw = currentParagraph
+      .map(line => line.trim())
+      .filter(line => line && !isDecorativeSeparatorLine(line))
+      .join('<br>')
+      .trim()
     if (raw) {
       htmlLines.push(`<p style="${P_STYLE}">${applyInlineFormatting(raw)}</p>`)
     }
@@ -60,6 +69,10 @@ function formatContent(content: string): string {
   for (const line of lines) {
     const trimmed = normalizeNumberedHeadingLine(line.trim())
     if (!trimmed) {
+      flushParagraph()
+      continue
+    }
+    if (isDecorativeSeparatorLine(trimmed)) {
       flushParagraph()
       continue
     }

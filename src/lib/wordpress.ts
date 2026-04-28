@@ -138,6 +138,11 @@ const P_STYLE = 'margin-bottom:1.6em;';
 const UL_LIST_STYLE = 'list-style:none;padding-left:0;margin:16px 0;';
 const LI_LIST_STYLE = 'margin-bottom:1.2em;padding-left:1em;text-indent:-1em;';
 
+/** 単独の区切り記号行は本文にも見出しにも出さない */
+function isDecorativeSeparatorLine(trimmed: string): boolean {
+  return /^[\-—―–─━=*＊]{1,10}$/.test(trimmed);
+}
+
 /** 番号なしで単独行となる h2 見出しパターン（SEO: セクション構造を明示） */
 const STANDALONE_H2_REGEXES: RegExp[] = [
   /^まとめ[：:]\s*.+/,
@@ -159,6 +164,7 @@ function normalizeStandaloneH2PlainText(trimmed: string): string {
 
 function isStandaloneH2Candidate(trimmed: string, lineIndex: number, prevRaw: string, paragraphLen: number): boolean {
   if (paragraphLen !== 0) return false;
+  if (isDecorativeSeparatorLine(trimmed)) return false;
   if (STANDALONE_H2_REGEXES.some(re => re.test(trimmed))) return true;
   // 短文タイトル行: 直前行が空行または区切り線のときのみ（先頭行は対象外）
   if (
@@ -226,20 +232,28 @@ export function convertToHtml(content: string): string {
     let i = 0;
     while (i < rawLines.length) {
       const row = rawLines[i]!;
+      if (isDecorativeSeparatorLine(row)) {
+        i++;
+        continue;
+      }
       if (/^[・\-]\s/.test(row)) {
         const items: string[] = [];
         while (i < rawLines.length && /^[・\-]\s/.test(rawLines[i]!)) {
-          items.push(rawLines[i]!.replace(/^[・\-]\s*/, ''));
+          const item = rawLines[i]!.replace(/^[・\-]\s*/, '').trim();
+          if (item) items.push(item);
           i++;
         }
-        const liBlocks = items
-          .map(it => `<li style="${LI_LIST_STYLE}">${formatListItemHtml(it)}</li>`)
-          .join('\n');
-        htmlLines.push(`<ul style="${UL_LIST_STYLE}">\n${liBlocks}\n</ul>`);
+        if (items.length > 0) {
+          const liBlocks = items
+            .map(it => `<li style="${LI_LIST_STYLE}">${formatListItemHtml(it)}</li>`)
+            .join('\n');
+          htmlLines.push(`<ul style="${UL_LIST_STYLE}">\n${liBlocks}\n</ul>`);
+        }
       } else {
         const plines: string[] = [];
         while (i < rawLines.length && !/^[・\-]\s/.test(rawLines[i]!)) {
-          plines.push(rawLines[i]!);
+          const line = rawLines[i]!;
+          if (!isDecorativeSeparatorLine(line)) plines.push(line);
           i++;
         }
         const text = plines
@@ -265,6 +279,11 @@ export function convertToHtml(content: string): string {
     const prevRaw = i > 0 ? lines[i - 1]! : '';
 
     if (!trimmed) {
+      flushParagraph();
+      continue;
+    }
+
+    if (isDecorativeSeparatorLine(trimmed)) {
       flushParagraph();
       continue;
     }
