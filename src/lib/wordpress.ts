@@ -143,6 +143,41 @@ function isDecorativeSeparatorLine(trimmed: string): boolean {
   return /^[\-—―–─━=*＊]{1,10}$/.test(trimmed);
 }
 
+/** 記号見出し（■▶◆●▼）でも長文は本文扱いにして、見出しボックス連発を防ぐ */
+function canUseSymbolLineAsHeading(text: string): boolean {
+  const t = text.trim();
+  if (!t) return false;
+  if (t.length > 34) return false;
+  if (/[。．！？]$/.test(t)) return false;
+  return true;
+}
+
+/** h2/h3 が連続した場合、2個目以降は本文に降格して見出しボックス連発を防ぐ */
+function demoteConsecutiveHeadings(html: string): string {
+  const lines = html.split('\n');
+  const out: string[] = [];
+  let prevWasHeading = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const m = trimmed.match(/^<h[23][^>]*>([\s\S]*?)<\/h[23]>$/i);
+    if (!m) {
+      if (trimmed) prevWasHeading = false;
+      out.push(line);
+      continue;
+    }
+    if (prevWasHeading) {
+      out.push(`<p style="${P_STYLE}">${m[1]}</p>`);
+      prevWasHeading = false;
+      continue;
+    }
+    out.push(line);
+    prevWasHeading = true;
+  }
+
+  return out.join('\n');
+}
+
 /** 番号なしで単独行となる h2 見出しパターン（SEO: セクション構造を明示） */
 const STANDALONE_H2_REGEXES: RegExp[] = [
   /^まとめ[：:]\s*.+/,
@@ -325,7 +360,12 @@ export function convertToHtml(content: string): string {
         .replace(/^[■▶◆●▼]\s*/, '')
         .replace(/\*\*(.+?)\*\*/g, '$1')
         .replace(/\*\*/g, '');
-      htmlLines.push(`<h3 id="section-${h2Count}-${h3Count}" style="${H3_STYLE}">${text}</h3>`);
+      if (canUseSymbolLineAsHeading(text)) {
+        htmlLines.push(`<h3 id="section-${h2Count}-${h3Count}" style="${H3_STYLE}">${text}</h3>`);
+      } else {
+        currentParagraph.push(text);
+        h3Count--;
+      }
       continue;
     }
 
@@ -333,7 +373,7 @@ export function convertToHtml(content: string): string {
   }
 
   flushParagraph();
-  return fixStrongParagraphNesting(htmlLines.join('\n'));
+  return fixStrongParagraphNesting(demoteConsecutiveHeadings(htmlLines.join('\n')));
 }
 
 /** HTMLタグ・マークダウン記法除去と主要なHTMLエンティティのデコード（Schema/FAQ用プレーンテキスト化） */

@@ -1,10 +1,10 @@
 name: Auto Publish Article
 
 # JST 火・金 10:00（= UTC 01:00 TUE,FRI）に /api/auto-publish/run を叩いて
-# キュー先頭 1 件を「予約投稿（Cron 実行から 2 時間後）」として WordPress に自動投稿する。
+# キュー先頭 1 件を WordPress に「下書き保存」する。
 #
 # 備考:
-#   - schedule は多少遅延することがある（GitHub Actions の仕様）。公開は 2 時間後なので実用上問題なし。
+#   - schedule は多少遅延することがある（GitHub Actions の仕様）。
 #   - workflow_dispatch から手動実行して初回テストを行う。
 #   - タイムアウトは 10 分（= Vercel 側の maxDuration=300s + ネットワーク/リトライ余裕）。
 

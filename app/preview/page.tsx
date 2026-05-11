@@ -36,6 +36,41 @@ function isDecorativeSeparatorLine(trimmed: string): boolean {
   return /^[\-—―–─━=*＊]{1,10}$/.test(trimmed)
 }
 
+/** 記号見出し（■▶◆●▼）でも長文は本文扱いにして、見出しボックス連発を防ぐ */
+function canUseSymbolLineAsHeading(text: string): boolean {
+  const t = text.trim()
+  if (!t) return false
+  if (t.length > 34) return false
+  if (/[。．！？]$/.test(t)) return false
+  return true
+}
+
+/** h2/h3 が連続した場合、2個目以降は本文に降格して見出しボックス連発を防ぐ */
+function demoteConsecutiveHeadings(html: string, pStyle: string): string {
+  const lines = html.split('\n')
+  const out: string[] = []
+  let prevWasHeading = false
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    const m = trimmed.match(/^<h[23][^>]*>([\s\S]*?)<\/h[23]>$/i)
+    if (!m) {
+      if (trimmed) prevWasHeading = false
+      out.push(line)
+      continue
+    }
+    if (prevWasHeading) {
+      out.push(`<p style="${pStyle}">${m[1]}</p>`)
+      prevWasHeading = false
+      continue
+    }
+    out.push(line)
+    prevWasHeading = true
+  }
+
+  return out.join('\n')
+}
+
 function formatContent(content: string): string {
   const H2_STYLE =
     "font-size:22px;font-weight:700;margin:48px 0 16px;padding-bottom:8px;border-bottom:2px solid #33B5E5;font-family:'Noto Sans JP',sans-serif;"
@@ -89,14 +124,18 @@ function formatContent(content: string): string {
     if (/^[■▶◆●▼]\s/.test(trimmed)) {
       flushParagraph()
       const text = trimmed.replace(/^[■▶◆●▼]\s*/, '').replace(/\*\*(.+?)\*\*/g, '$1')
-      htmlLines.push(`<h3 style="${H3_STYLE}">${text}</h3>`)
+      if (canUseSymbolLineAsHeading(text)) {
+        htmlLines.push(`<h3 style="${H3_STYLE}">${text}</h3>`)
+      } else {
+        currentParagraph.push(text)
+      }
       continue
     }
     currentParagraph.push(trimmed)
   }
 
   flushParagraph()
-  let bodyHtml = htmlLines.join('\n')
+  let bodyHtml = demoteConsecutiveHeadings(htmlLines.join('\n'), P_STYLE)
 
   bodyHtml = bodyHtml
     .replace(

@@ -20,7 +20,7 @@
  *   7. generateArticleImage（SD3.5）
  *   8. compositeArticleTitleOnImageServer（@napi-rs/canvas でタイトル焼き込み）
  *   9. WordPress メディアにアップロード
- *  10. postToWordPress(status='future', scheduledDate = now + 2h)
+ *  10. postToWordPress(status='draft')
  *  11. SavedArticle を articles/<id>.json に保存（targetKeyword に kw.keyword を必ず入れる。
  *      これにより次回の /ahrefs 表示で投稿日列に反映される）
  *  12. clearFailure(kw) で失敗カウントを消す / history に success
@@ -31,7 +31,7 @@
  *  - 3 回目で autorun/skipped.json に昇格（以降自動選択されない）
  *
  * テスト用クエリオーバーライド（いずれも CRON_SECRET 必須）：
- *  - ?status=draft|publish|future  (デフォルト future)
+ *  - ?status=draft|publish|future  (デフォルト draft)
  *  - ?delayMinutes=N               (デフォルト 2h = 120 分)
  */
 import { NextRequest, NextResponse } from 'next/server'
@@ -242,8 +242,8 @@ async function processKeyword(
     kw.keyword.slice(0, 40),
   )
 
-  // 8. WordPress へ投稿（デフォルト: future+2h、オーバーライド可）
-  const wpStatus: 'draft' | 'publish' | 'future' = overrides.status ?? 'future'
+  // 8. WordPress へ投稿（デフォルト: draft、オーバーライド可）
+  const wpStatus: 'draft' | 'publish' | 'future' = overrides.status ?? 'draft'
   const scheduledFor =
     wpStatus === 'future' ? computeScheduledDate(overrides.delayMinutes) : new Date().toISOString()
   const postResult = await postToWordPress(
@@ -266,6 +266,7 @@ async function processKeyword(
   //    「投稿日」列が自動で反映される（buildKeywordWpEntriesByKeyword が拾う）
   const articleId = `auto-${Date.now()}`
   const nowIso = new Date().toISOString()
+  const savedStatus: SavedArticle['status'] = postResult.status === 'draft' ? 'ready' : 'published'
   const saved: SavedArticle = {
     id: articleId,
     title: refined.refinedTitle,
@@ -275,7 +276,7 @@ async function processKeyword(
     refinedContent: refined.refinedContent,
     imageUrl: media.sourceUrl,
     wordpressUrl: postResult.link,
-    status: 'published',
+    status: savedStatus,
     createdAt: nowIso,
     ...(postResult.dateGmt ? { wordpressPublishedAt: postResult.dateGmt } : {}),
     slug,
