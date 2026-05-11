@@ -226,10 +226,11 @@ async function processKeyword(
   // 4. スラッグ
   const slug = await generateSlugFromGemini(refined.refinedTitle, kw.keyword, refined.refinedContent)
 
-  // 5. 画像生成
+  // 5. 画像生成（archetype/palette はキーワードと日付からローテーション決定）
   const image = await generateArticleImage({
     title: refined.refinedTitle,
     content: refined.refinedContent,
+    rotationSeed: kw.keyword,
   })
 
   // 6. タイトル焼き込み

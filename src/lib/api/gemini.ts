@@ -665,41 +665,57 @@ function fallbackSlug(): string {
   return maAdvisorDateFallbackSlug()
 }
 
-/** 記事タイトル・本文から画像生成用の英文プロンプトを1文で生成する（Stable Diffusion用） */
+/**
+ * 記事タイトル・本文から画像生成用の英文プロンプトを1文で生成する（Stable Diffusion用）。
+ *
+ * 第3引数の `style` で archetype（シーンの型）と palette（配色）を**指名で**渡せる。
+ * 自動投稿フロー（imageGeneration.ts）はホスト側でローテーション決定して渡し、
+ * これにより連続2回の自動生成で同じスタイルが並ばないようにする。
+ *
+ * Smart Boarding コラム参考の「人物入り実写ストックフォト」に寄せている。
+ * テキスト・ロゴ・看板・UI 要素・通貨記号などは引き続き禁止。
+ */
 export async function generateImagePromptFromArticle(
   title: string,
-  content: string
+  content: string,
+  style?: { archetypeId?: string; paletteId?: string },
 ): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey?.trim()) throw new Error('GEMINI_API_KEY が設定されていません')
 
+  const { getArchetypeById, getPaletteById, pickImageRotationSlot } = await import(
+    '@/lib/imagePromptStyles'
+  )
+
+  const slot = pickImageRotationSlot(`${title}|${content.slice(0, 60)}`)
+  const archetype = getArchetypeById(style?.archetypeId ?? slot.archetypeId)
+  const palette = getPaletteById(style?.paletteId ?? slot.paletteId)
+
   const contentSnippet = content.trim().slice(0, 1800)
   const prompt = `You are an expert at writing Stable Diffusion prompts for Japanese B2B SaaS article thumbnails (HR, training, e-learning) aimed at the Japan market.
 
-Read the TITLE and CONTENT below, then pick exactly ONE best-matching expression archetype from the list (by concept, not by printing its name), and output exactly ONE English prompt sentence for a photorealistic 16:9 image that evokes the article through scene, objects, light, and mood only.
+Read the TITLE and CONTENT below and write exactly ONE English prompt sentence (max 48 words) for a photorealistic 16:9 stock photography image that evokes the article through scene, objects, people if any, light, and mood.
 
-ARCHETYPE CHOICES (pick one that fits the article; weave it naturally into your sentence — do not output the archetype label):
-1) workspace_still_life — Neat wooden desk, notebook, coffee cup, laptop with screen showing only a minimalist pastel gradient or glow and lens blur (work, learning).
-2) abstract_concept_metaphor — Symbolic objects: ascending staircase, compass, interlocking puzzle pieces with NO writing, or water ripples (growth, direction, teamwork, ideas).
-3) nature_and_light — Fresh green plant leaves near a sunny window, wide empty field under blue sky, or tranquil lake horizon (potential, calm, fresh start).
-4) minimalist_macro_detail — Extreme close-up on texture of premium paper, fountain pen nib, leather notebook cover, or architectural materials (quality, focus, craftsmanship).
-5) architectural_lines_and_reflections — Modern office building facade, conference room structural lines with frosted glass, or daylight reflections on glass (structure, transparency, corporate tone). No signage or readable text.
-6) abstract_geometric_forms — Clean compositions of soft 3D geometric shapes, layered color-blocked panels, or floating transparent spheres (harmony, systems, connection).
+REQUIRED ARCHETYPE (use this exact concept — do not switch to another):
+${archetype.sceneHint}
+PEOPLE GUIDANCE for this archetype: ${archetype.peopleHint}
 
-RULES (strict — unchanged):
-- NO people, humans, silhouettes, hands, or body parts whatsoever (brand-safe empty spaces only)
+REQUIRED COLOR PALETTE:
+${palette.paletteHint}
+
+GLOBAL RULES (strict):
+- Photorealistic stock photography, horizontal 16:9, natural lighting (not over-edited)
+- People may appear when the archetype allows, but: no extreme close-up of a face, no celebrity-like or identifiable individual features, no logos on clothing
 - NO text, letters, numbers, logos, watermarks, signage, sticky notes with writing, printed charts, or any legible symbols anywhere in the frame
-- NO UI metaphors: do NOT mention dashboards, LMS, course progress, analytics, charts, graphs, labels, tickers, HUDs, data visualizations, or "interface" of any kind
-- If a laptop, monitor, or tablet appears: the screen must be described ONLY as a soft minimalist glow, blurred abstract wallpaper, or gentle gradient — never icons, chrome, windows, or readable content; use tasteful photographic bokeh or lens blur on the screen, NOT broken or glitchy LCD
-- Plenty of negative space, minimalist composition, clean and calm
-- Horizontal 16:9; photorealistic
-
-COLOR PALETTE: Do NOT default to pastel. Choose ONE palette that fits the article mood from: cool blue and silver (intellectual); warm earth tones (warmth); vibrant accents (pop); monochrome with one restrained spot color (refined); or bright airy pastel (only when it truly fits). Name the palette implicitly through your color and lighting words.
-
-Max 42 words. Output ONE English sentence only. No quotes. No explanation.
+- NO UI metaphors: do NOT mention dashboards, LMS, analytics, charts, graphs, labels, HUDs, data visualizations, or any "interface"
+- If a laptop, monitor, or tablet appears: the screen must be described ONLY as a soft blurred gradient or gentle glow — never icons, chrome, windows, or readable content
+- NO cracked screens, glitch art, scan lines, or noir/dark dramatic mood
+- Avoid cartoon, anime, illustration, painting, or 3D render style
 
 TITLE: ${title.trim()}
 CONTENT EXCERPT: ${contentSnippet}
+
+Output ONE English sentence only. No quotes. No labels. No explanation.
 
 One sentence describing the scene:`
 
@@ -707,6 +723,6 @@ One sentence describing the scene:`
   const sentence = raw.trim().replace(/^["']|["']$/g, '').trim()
   return (
     sentence ||
-    'clean minimalist photorealistic composition, soft natural lighting, horizontal 16:9'
+    `${archetype.sceneHint}, ${palette.paletteHint}, photorealistic horizontal 16:9 stock photography`
   )
 }

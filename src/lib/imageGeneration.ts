@@ -15,6 +15,14 @@ import {
   InvokeModelCommand,
 } from '@aws-sdk/client-bedrock-runtime'
 import { generateImagePromptFromArticle } from '@/lib/api/gemini'
+import {
+  IMAGE_ARCHETYPES,
+  getArchetypeById,
+  getPaletteById,
+  nextArchetypeIdAfter,
+  pickImageRotationSlot,
+  type ImageRotationSlot,
+} from '@/lib/imagePromptStyles'
 
 const BEDROCK_IMAGE_REGION = 'us-west-2'
 
@@ -25,50 +33,49 @@ export interface GeneratedImage {
   mimeType: 'image/jpeg'
   /** SD に送った最終プロンプト（ログ用） */
   prompt: string
+  /** ローテーションで実際に採用された archetype/palette（デバッグ用） */
+  rotation: ImageRotationSlot
 }
 
-function pickRandom<T>(items: readonly T[]): T {
-  return items[Math.floor(Math.random() * items.length)]!
-}
-
-/** SD3.5 に送る安全系ネガティブプロンプト（app/api/image/route.ts と同期して維持） */
+/**
+ * SD3.5 に送る安全系ネガティブプロンプト（app/api/image/route.ts と同期して維持）。
+ * 人物そのものは禁止しないが、顔の極端なクローズアップ・特定個人の特徴・ロゴ等は避ける。
+ */
 const SAFE_NEGATIVE_PROMPT = [
   'text, typography, watermark, logo, subtitle, caption',
   'readable text, legible numbers, gibberish letters, gibberish text, random letters',
   'carved letters on wood, alphabet blocks, letter cubes',
   'dollar sign, USD, euro sign, currency symbols',
   'English UI, roman alphabet on screen, fake interface text',
-  'stock ticker, dashboard labels, HUD text',
+  'stock ticker, dashboard labels, HUD text, dashboards, charts, graphs',
   'cartoon, anime, illustration, painting, 3D render',
   'low quality, distorted, deformed, oversaturated',
   'cracked screen, broken LCD, glitch art, scan lines',
   'dark moody atmosphere, dramatic shadows, noir lighting',
   'neon colors, harsh fluorescent lighting',
+  'extreme close-up of a face, identifiable celebrity, recognizable logo on clothing',
 ].join(', ')
 
 const PROMPT_SCREEN_SAFE_SUFFIX =
-  'minimalist composition, plenty of negative space, any screen must be blank or showing only soft bokeh, no legible text, no currency symbols, no dollar signs'
+  'any laptop, monitor, or phone screen must be blank or only showing soft bokeh, no legible text, no currency symbols, no dashboards'
 
 function appendScreenSafeSuffix(basePrompt: string): string {
   const t = basePrompt.trim().replace(/,+\s*$/, '')
   return `${t}, ${PROMPT_SCREEN_SAFE_SUFFIX}`
 }
 
-const FALLBACK_ARCHETYPES = [
-  'soft pastel gradient background from pale pink to white, clean minimalist composition, abstract geometric shapes, bright airy mood, 16:9',
-  'overhead view of clean wooden desk with laptop notebook and coffee cup, laptop screen out of frame or only a subtle soft reflection, soft natural window light, minimalist Japanese workspace, 16:9',
-  'bright open field with blue sky and soft clouds, fresh green grass, wide open space, natural daylight, landscape, 16:9',
-  'ascending wooden staircase in bright minimalist interior with window and greenery, growth metaphor, natural daylight, 16:9',
-  'modern glass building exterior reflecting blue sky, upward angle, bright daylight, clean composition, 16:9',
-  'single compass on wooden surface, soft golden bokeh background, direction concept, close-up macro, 16:9',
-] as const
-
-function buildFallbackPrompt(): string {
+/**
+ * フォールバック（Gemini プロンプト生成失敗時）に使う 1 文プロンプトを、
+ * 指定された archetype / palette から組み立てる。
+ * archetype 配列の順序は IMAGE_ARCHETYPES と一致しており、リトライで次のスロットへ進められる。
+ */
+function buildFallbackPromptFromSlot(slot: ImageRotationSlot): string {
+  const arch = getArchetypeById(slot.archetypeId)
+  const pal = getPaletteById(slot.paletteId)
   return [
-    pickRandom(FALLBACK_ARCHETYPES),
-    'photorealistic stock photography, professional composition',
-    'soft natural lighting, shallow depth of field, creamy bokeh',
-    'bright airy optimistic mood, high key lighting',
+    arch.sceneHint,
+    pal.paletteHint,
+    'photorealistic 16:9 stock photography, soft natural lighting, shallow depth of field, calm professional mood',
   ].join(', ')
 }
 
@@ -121,43 +128,72 @@ async function invokeSD35(
 export interface GenerateArticleImageInput {
   title: string
   content: string
-  /** 既定 2。安全フィルターで落ちた場合のリトライ回数 */
+  /**
+   * ローテーションスロット決定用のシード。通常はターゲットKWを渡す。
+   * 未指定の場合はタイトル+本文先頭から自動生成。
+   */
+  rotationSeed?: string
+  /** 既定 IMAGE_ARCHETYPES.length。安全フィルターで落ちた場合のリトライ回数（毎回 archetype を進める） */
   maxRetries?: number
 }
 
 /**
  * 記事タイトル・本文から SD3.5 でアイキャッチ画像を 1 枚生成する。
- * コンテンツフィルターで落ちた場合は汎用フォールバック文にフォールバックして再試行する。
+ *
+ * 1. シード（ターゲットKWまたはタイトル）と現在日時から archetype/palette を決定的にローテーション
+ * 2. Gemini に archetype/palette を**指名で**渡してプロンプト1文を生成
+ * 3. SD3.5 に投げる。コンテンツフィルターで落ちた場合は archetype を1つ進めてフォールバック1文で再試行
  */
 export async function generateArticleImage(
   input: GenerateArticleImageInput,
 ): Promise<GeneratedImage> {
-  const maxRetries = input.maxRetries ?? 2
+  const maxRetries = input.maxRetries ?? IMAGE_ARCHETYPES.length
   const title = input.title.trim()
   const trimmedContent = input.content.trim()
+  const seed = (input.rotationSeed ?? `${title}|${trimmedContent.slice(0, 80)}`).trim()
+
+  const initialSlot = pickImageRotationSlot(seed)
+  let currentSlot: ImageRotationSlot = initialSlot
+  console.log(
+    `[imageGen] rotation slot archetype=${initialSlot.archetypeId} palette=${initialSlot.paletteId}`,
+  )
 
   let basePrompt: string
   try {
-    basePrompt = await generateImagePromptFromArticle(title, trimmedContent)
+    basePrompt = await generateImagePromptFromArticle(title, trimmedContent, {
+      archetypeId: initialSlot.archetypeId,
+      paletteId: initialSlot.paletteId,
+    })
   } catch (e) {
     console.warn('[imageGen] Gemini プロンプト失敗、フォールバック:', (e as Error)?.message)
-    basePrompt = buildFallbackPrompt()
+    basePrompt = buildFallbackPromptFromSlot(initialSlot)
   }
 
   let lastFilterReason = ''
   for (let attempt = 0; attempt < maxRetries; attempt++) {
-    const prompt = appendScreenSafeSuffix(attempt === 0 ? basePrompt : buildFallbackPrompt())
-    console.log(`[imageGen] attempt ${attempt + 1}/${maxRetries} prompt=`, prompt.slice(0, 240))
+    const promptToUse =
+      attempt === 0 ? basePrompt : buildFallbackPromptFromSlot(currentSlot)
+    const prompt = appendScreenSafeSuffix(promptToUse)
+    console.log(
+      `[imageGen] attempt ${attempt + 1}/${maxRetries} archetype=${currentSlot.archetypeId} prompt=`,
+      prompt.slice(0, 240),
+    )
     const result = await invokeSD35(prompt, SAFE_NEGATIVE_PROMPT)
     if (result.base64) {
       return {
         buffer: Buffer.from(result.base64, 'base64'),
         mimeType: 'image/jpeg',
         prompt,
+        rotation: currentSlot,
       }
     }
     lastFilterReason = result.filterReason ?? 'unknown'
     console.warn(`[imageGen] filtered (reason=${lastFilterReason})`)
+    // 次のリトライでは archetype を1つ進める（palette は据え置き）
+    currentSlot = {
+      ...currentSlot,
+      archetypeId: nextArchetypeIdAfter(currentSlot.archetypeId),
+    }
   }
 
   throw new Error(
