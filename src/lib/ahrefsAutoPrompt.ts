@@ -8,7 +8,11 @@
  */
 import type { ScoredKeyword } from './ahrefsAnalyzer'
 
-export function generateAutoPrompt(row: ScoredKeyword): string {
+/**
+ * @param row          対象KW行
+ * @param pastTitles   同KWで過去に投稿済みのタイトル一覧（2周目以降の重複回避用）
+ */
+export function generateAutoPrompt(row: ScoredKeyword, pastTitles: string[] = []): string {
   const volStrategy = row.volume > 5000
     ? '包括的かつ網羅的な内容にすること。幅広い検索クエリに対応できるよう、複数の切り口で構成すること。'
     : row.volume > 1000
@@ -108,7 +112,11 @@ ${trendNote}
 - 関連キーワードの自然な散りばめ
 - FAQ構造化データに適した Q&A セクションを含める
 
-■出力形式（編集システム・プレビューと厳密に整合させること）
+${pastTitles.length > 0 ? `■過去投稿済みタイトル（これらと重複しないこと）
+以下のタイトルは同じキーワードで既に投稿済みです。内容・切り口・タイトルがこれらと明確に異なる記事を執筆してください。
+${pastTitles.map((t, i) => `${i + 1}. ${t}`).join('\n')}
+
+` : ''}■出力形式（編集システム・プレビューと厳密に整合させること）
 - Markdownの見出し（## 等）は使わない。システムが除去するため見出しとして表示されない
 - 本文はプレーンテキスト中心。太字が必要な場合のみ **文言** の形式（乱用しない）
 - 記事の流れ: リード文（数段落）→「1. 」から始まる大見出しと本文を交互に繰り返す → まとめ → FAQ（Q. / A. 形式）

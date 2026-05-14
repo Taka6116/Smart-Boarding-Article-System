@@ -126,16 +126,23 @@ function estimateWordCount(content: string): number {
 }
 
 /**
- * 最新の狙い目KW データセットから「まだ未投稿 & skipped にもなっていない」KW の
- * 優先度降順・スコア降順の先頭 1 件を返す。無ければ null。
+ * 最新の狙い目KW データセットから次に記事を生成すべき KW を選ぶ。
+ *
+ * 【ラウンドロビン戦略】
+ *   一周目: 優先度降順・スコア降順で「未投稿（draft含む）」な KW の先頭を選ぶ。
+ *   全KW制覇後: 各KWの「最終記事の createdAt」が最も古い KW を選び、2周目以降を繰り返す。
+ *
+ * 戻り値に pastTitles（同KWの既存記事タイトル一覧）も含め、
+ * generateAutoPrompt に渡すことで重複内容を防ぐ。
  */
 async function pickNextKeyword(): Promise<{
   kw: ScoredKeyword | null
+  pastTitles: string[]
   reason?: 'no-dataset' | 'all-done'
 }> {
   const latest = await loadLatestKeywordsDataset()
   if (!latest || !latest.keywords?.length) {
-    return { kw: null, reason: 'no-dataset' }
+    return { kw: null, pastTitles: [], reason: 'no-dataset' }
   }
 
   const scored = analyzeKeywords(latest.keywords).slice().sort((a, b) => {
@@ -149,13 +156,60 @@ async function pickNextKeyword(): Promise<{
   ])
   const postedIndex = buildKeywordWpEntriesByKeyword(articles)
 
+  // ── 一周目: 未投稿KWがあれば先頭を選ぶ ──
   for (const kw of scored) {
     const normKey = normalizeKeywordForArticleMatch(kw.keyword)
-    if (postedIndex.has(normKey)) continue
     if (skippedSet.has(normKey)) continue
-    return { kw }
+    if (!postedIndex.has(normKey)) {
+      return { kw, pastTitles: [] }
+    }
   }
-  return { kw: null, reason: 'all-done' }
+
+  // ── 全KW制覇: 各KWの最終記事 createdAt が最も古いものを選ぶ（ラウンドロビン2周目以降）──
+  // skipped は除外。postedIndex に載っているKWのみ対象。
+  type KwWithAge = { kw: ScoredKeyword; lastCreatedAt: number; pastTitles: string[] }
+  const candidates: KwWithAge[] = []
+
+  // KWごとに記事一覧を整理
+  const articlesByNormKw = new Map<string, typeof articles[number][]>()
+  for (const a of articles) {
+    const normKey = normalizeKeywordForArticleMatch(a.targetKeyword ?? '')
+    if (!normKey) continue
+    const arr = articlesByNormKw.get(normKey) ?? []
+    arr.push(a)
+    articlesByNormKw.set(normKey, arr)
+  }
+
+  for (const kw of scored) {
+    const normKey = normalizeKeywordForArticleMatch(kw.keyword)
+    if (skippedSet.has(normKey)) continue
+
+    const kwArticles = articlesByNormKw.get(normKey) ?? []
+    if (kwArticles.length === 0) continue  // 未投稿（通常ここには来ないが念のため）
+
+    // 最終記事の createdAt（古いほど優先）
+    const lastCreatedAt = Math.max(...kwArticles.map(a => new Date(a.createdAt).getTime()))
+    const pastTitles = kwArticles
+      .map(a => (a.refinedTitle || a.title || '').trim())
+      .filter(Boolean)
+
+    candidates.push({ kw, lastCreatedAt, pastTitles })
+  }
+
+  if (candidates.length === 0) {
+    // skipped 以外に候補がまったくない（全KWがskipped）
+    return { kw: null, pastTitles: [], reason: 'all-done' }
+  }
+
+  // 最も「最終記事が古い」KWを選ぶ
+  candidates.sort((a, b) => a.lastCreatedAt - b.lastCreatedAt)
+  const best = candidates[0]!
+  console.log('[auto-publish v2] 全KW制覇 → ラウンドロビン2周目以降', {
+    keyword: best.kw.keyword,
+    lastCreatedAt: new Date(best.lastCreatedAt).toISOString(),
+    pastTitlesCount: best.pastTitles.length,
+  })
+  return { kw: best.kw, pastTitles: best.pastTitles }
 }
 
 async function uploadImageToWordPressMedia(
@@ -200,6 +254,7 @@ async function uploadImageToWordPressMedia(
 async function processKeyword(
   kw: ScoredKeyword,
   overrides: RunOverrides = {},
+  pastTitles: string[] = [],
 ): Promise<{
   articleId: string
   wordpressPostId: number
@@ -214,8 +269,8 @@ async function processKeyword(
     category: kw.assignedCategory,
   })
 
-  // 1. 画面の「記事作成」ボタンと完全に同一のプロンプトを合成
-  const autoPrompt = generateAutoPrompt(kw)
+  // 1. 画面の「記事作成」ボタンと同一のプロンプトを合成。2周目以降は pastTitles を渡して重複回避
+  const autoPrompt = generateAutoPrompt(kw, pastTitles)
 
   // 2. 一次執筆（Gemini → 失敗時 Claude フォールバックは gemini.ts 側で処理）
   const draft = await generateFirstDraftFromPrompt(autoPrompt, kw.keyword, undefined)
@@ -315,11 +370,12 @@ async function runAutoPublish(overrides: RunOverrides = {}): Promise<NextRespons
   }
 
   const kw = picked.kw
+  const pastTitles = picked.pastTitles
   const startedAt = new Date().toISOString()
   const runId = `run-${Date.now()}`
 
   try {
-    const result = await processKeyword(kw, overrides)
+    const result = await processKeyword(kw, overrides, pastTitles)
     await clearFailure(kw.keyword)
     const finishedAt = new Date().toISOString()
     await appendAutoRunHistory({
