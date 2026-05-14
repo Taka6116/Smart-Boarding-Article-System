@@ -735,14 +735,10 @@ export function buildPostContent(
   // 1-0a. テキスト版FAQ（「よくある質問」H2以降のQ/Aテキスト）を除去（アコーディオンで置換するため）
   htmlBody = stripTextFaqFromHtml(htmlBody);
 
-  // 1-1. 本文最上部：記事画像（プレビューと同じスタイル）
-  const escapedTitle = payload.title.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const bodyTopImageBlock =
-    options?.bodyTopImageUrl
-      ? `<img src="${options.bodyTopImageUrl}" style="width:100%;height:auto;margin-bottom:32px;display:block;" alt="${escapedTitle} — Smart Boarding" />`
-      : '';
-
-  const fullBody = [bodyTopImageBlock, htmlBody].filter(Boolean).join('');
+  // 本文上部への <img> 埋め込みは行わない。
+  // アイキャッチ（featured_media）をテーマが本文上部に自動表示するため、
+  // 本文内に画像を入れると一覧ページのサムネが焼き込みなし画像になってしまう問題を防ぐ。
+  const fullBody = htmlBody;
 
   // 2. FAQを抽出（分離したFAQセクション or 全文から）＋ question 重複除去
   const faqSource = faqSection || payload.content;
