@@ -207,7 +207,9 @@ function PreviewContent() {
             if (typeof match.wordpressUrl === 'string' && match.wordpressUrl.trim()) {
               wp = match.wordpressUrl.trim()
             }
-            if (match.imageUrl) storedImage = match.imageUrl
+            // 焼き込みなし元画像を優先。無ければ imageUrl にフォールバック
+            if (match.rawImageUrl) storedImage = match.rawImageUrl
+            else if (match.imageUrl) storedImage = match.imageUrl
           }
         }
       } catch { /* ignore */ }

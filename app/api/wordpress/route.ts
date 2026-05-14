@@ -6,6 +6,7 @@ export async function POST(request: Request) {
     title, content, targetKeyword, imageUrl, slug, status, scheduledDate,
     wordpressTags, categoryIds,
     preUploadedMediaId, preUploadedImageUrl,
+    rawImageUrl,
   } = body
 
   if (!title?.trim() || !content?.trim()) {
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
         wordpressTags,
       },
       status ?? 'draft',
-      { scheduledDate, categoryIds, preUploadedMediaId, preUploadedImageUrl }
+      { scheduledDate, categoryIds, preUploadedMediaId, preUploadedImageUrl, rawImageUrl }
     )
 
     return Response.json({

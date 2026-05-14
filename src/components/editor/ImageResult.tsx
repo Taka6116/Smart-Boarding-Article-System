@@ -73,18 +73,8 @@ export default function ImageResult({
       const content = article.refinedContent || article.originalContent || ''
       sessionStorage.setItem('preview_content', content)
 
-      // 合成済み画像を優先。まだ生成中なら compositeArticleTitleOnImage を待つ
-      let previewImage = composited || article.imageUrl || null
-      if (!composited && article.imageUrl) {
-        const title = article.refinedTitle?.trim() || article.title || ''
-        if (title) {
-          try {
-            previewImage = await compositeArticleTitleOnImage(article.imageUrl, title)
-          } catch {
-            previewImage = article.imageUrl
-          }
-        }
-      }
+      // プレビュー（記事本文）には焼き込みなし元画像を使う。rawImageUrl が無い場合は imageUrl にフォールバック
+      const previewImage = article.rawImageUrl || article.imageUrl || null
       await setSessionPreviewImage(previewImage)
 
       const params = new URLSearchParams({
@@ -108,9 +98,9 @@ export default function ImageResult({
     article.refinedContent,
     article.originalContent,
     article.imageUrl,
+    article.rawImageUrl,
     article.refinedTitle,
     article.title,
-    composited,
     articleId,
     onSaveDraft,
     router,

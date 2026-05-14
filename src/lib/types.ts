@@ -19,7 +19,10 @@ export interface ArticleData {
   targetKeyword?: string
   /** 追加する内部リンク（担当者が設定） */
   internalLinks: InternalLinkEntry[]
+  /** タイトル焼き込みあり画像URL（カードサムネ・アイキャッチ用） */
   imageUrl: string
+  /** タイトル焼き込みなし元画像URL（記事本文・プレビュー用） */
+  rawImageUrl?: string
   wordpressUrl?: string
   /** WordPress REST が返した直近の投稿ステータス（下書き投稿成功時など） */
   wordpressPostStatus?: string
@@ -38,7 +41,10 @@ export interface SavedArticle {
   targetKeyword: string
   originalContent: string
   refinedContent: string
+  /** タイトル焼き込みあり画像URL（カードサムネ・アイキャッチ用） */
   imageUrl: string
+  /** タイトル焼き込みなし元画像URL（記事本文・プレビュー用）。未設定時は imageUrl にフォールバック */
+  rawImageUrl?: string
   wordpressUrl?: string
   status: ArticleStatus
   createdAt: string

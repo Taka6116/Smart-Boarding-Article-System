@@ -842,7 +842,14 @@ async function resolveWordPressTagIds(
 export async function postToWordPress(
   payload: WordPressPostPayload,
   status: 'draft' | 'publish' | 'future' = 'draft',
-  options?: { scheduledDate?: string; categoryIds?: number[]; preUploadedMediaId?: number; preUploadedImageUrl?: string }
+  options?: {
+    scheduledDate?: string
+    categoryIds?: number[]
+    preUploadedMediaId?: number
+    preUploadedImageUrl?: string
+    /** 記事本文上部に表示する焼き込みなし元画像のURL。指定がなければ preUploadedImageUrl を使用 */
+    rawImageUrl?: string
+  }
 ): Promise<WordPressPostResult> {
   const wpUrl = process.env.WORDPRESS_URL?.trim();
   const username = process.env.WORDPRESS_USERNAME?.trim();
@@ -874,7 +881,8 @@ export async function postToWordPress(
   if (options?.preUploadedMediaId) {
     // 事前アップロード済み: mediaIdとURLをそのまま使用
     mediaId = options.preUploadedMediaId;
-    bodyTopImageUrl = options.preUploadedImageUrl;
+    // 記事本文画像: rawImageUrl（焼き込みなし）があれば優先、なければアイキャッチと同じ
+    bodyTopImageUrl = options.rawImageUrl ?? options.preUploadedImageUrl;
     console.log('[WordPress] 事前アップロード済み画像を使用: mediaId=', mediaId);
   } else if (payload.imageBase64) {
     // フォールバック: インラインアップロード（直接base64が渡された場合）

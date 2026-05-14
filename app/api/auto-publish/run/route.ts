@@ -291,7 +291,14 @@ async function processKeyword(
   // 6. タイトル焼き込み
   const composited = await compositeArticleTitleOnImageServer(image.buffer, refined.refinedTitle)
 
-  // 7. WordPress メディアアップロード
+  // 7a. 元画像（焼き込みなし）を WordPress メディアにアップロード → rawImageUrl として保存
+  const rawMedia = await uploadImageToWordPressMedia(
+    image.buffer,
+    image.mimeType,
+    `${kw.keyword.slice(0, 36)}-raw`,
+  )
+
+  // 7b. 焼き込みあり画像をアイキャッチ用にアップロード
   const media = await uploadImageToWordPressMedia(
     composited.buffer,
     composited.mimeType,
@@ -314,6 +321,7 @@ async function processKeyword(
       ...(wpStatus === 'future' ? { scheduledDate: scheduledFor } : {}),
       preUploadedMediaId: media.mediaId,
       preUploadedImageUrl: media.sourceUrl,
+      rawImageUrl: rawMedia.sourceUrl,
     },
   )
 
@@ -331,6 +339,7 @@ async function processKeyword(
     originalContent: draft.content,
     refinedContent: refined.refinedContent,
     imageUrl: media.sourceUrl,
+    rawImageUrl: rawMedia.sourceUrl,
     wordpressUrl: postResult.link,
     status: savedStatus,
     createdAt: nowIso,

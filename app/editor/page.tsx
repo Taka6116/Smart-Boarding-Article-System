@@ -6,7 +6,6 @@ import { Step, ArticleData, ProcessingState } from '@/lib/types'
 import { applyInternalLinksToText } from '@/lib/internalLinks'
 import { getArticleById, saveArticle, updateArticleStatus } from '@/lib/articleStorage'
 import { setSessionPreviewImage } from '@/lib/sessionPreviewImage'
-import { compositeArticleTitleOnImage } from '@/lib/compositeArticleTitleOnImage'
 import { parseWordPressTagsInput } from '@/lib/wordpressTags'
 import type { WordPressPublishChoice } from '@/lib/wordpressPublishChoice'
 import ArticleInput from '@/components/editor/ArticleInput'
@@ -25,6 +24,7 @@ const initialArticle: ArticleData = {
   targetKeyword: '',
   internalLinks: [],
   imageUrl: '',
+  rawImageUrl: undefined,
   wordpressUrl: undefined,
   wordpressTags: [],
 }
@@ -99,6 +99,7 @@ function EditorContent() {
           originalContent: savedArticle.originalContent,
           refinedContent: savedArticle.refinedContent,
           imageUrl: savedArticle.imageUrl,
+          rawImageUrl: savedArticle.rawImageUrl,
           internalLinks: [],
           wordpressUrl: savedArticle.wordpressUrl,
           wordpressPostStatus: savedArticle.wordpressPostStatus,
@@ -270,8 +271,10 @@ function EditorContent() {
         setFireflyStatus('error')
         return
       }
+      const dataUrl = `data:${data.mimeType ?? 'image/png'};base64,${data.imageBase64}`
       updateArticle({
-        imageUrl: `data:${data.mimeType ?? 'image/png'};base64,${data.imageBase64}`,
+        imageUrl: dataUrl,
+        rawImageUrl: dataUrl,
       })
       setFireflyStatus('success')
     } catch (e) {
@@ -282,7 +285,7 @@ function EditorContent() {
 
   const handleImageUpload = useCallback(
     (imageUrl: string) => {
-      updateArticle({ imageUrl })
+      updateArticle({ imageUrl, rawImageUrl: imageUrl })
       setFireflyStatus('success')
     },
     [updateArticle]
@@ -321,15 +324,8 @@ function EditorContent() {
             article.internalLinks ?? []
           )
           sessionStorage.setItem('preview_content', content)
-          let previewImage: string | null = article.imageUrl || null
-          const title = article.refinedTitle?.trim() || article.title || ''
-          if (previewImage && title) {
-            try {
-              previewImage = await compositeArticleTitleOnImage(previewImage, title)
-            } catch {
-              /* raw のまま */
-            }
-          }
+          // プレビュー（記事本文）には焼き込みなし元画像を使う
+          const previewImage: string | null = article.rawImageUrl || article.imageUrl || null
           await setSessionPreviewImage(previewImage)
           const params = new URLSearchParams({
             title: (article.refinedTitle || article.title || '').trim(),
@@ -364,6 +360,7 @@ function EditorContent() {
         originalContent: article.originalContent,
         refinedContent: article.refinedContent,
         imageUrl: article.imageUrl,
+        rawImageUrl: article.rawImageUrl ?? existing?.rawImageUrl,
         wordpressUrl: article.wordpressUrl,
         wordpressPostStatus: existing?.wordpressPostStatus,
         wordpressPublishedAt: existing?.wordpressPublishedAt,
@@ -387,7 +384,7 @@ function EditorContent() {
   const handleRegenerate = useCallback(async () => {
     setFireflyStatus('loading')
     setFireflyError(null)
-    updateArticle({ imageUrl: '' })
+    updateArticle({ imageUrl: '', rawImageUrl: undefined })
     try {
       const res = await fetch('/api/image', {
         method: 'POST',
@@ -406,7 +403,8 @@ function EditorContent() {
         setFireflyStatus('error')
         return
       }
-      updateArticle({ imageUrl: `data:${data.mimeType};base64,${data.imageBase64}` })
+      const dataUrl = `data:${data.mimeType};base64,${data.imageBase64}`
+      updateArticle({ imageUrl: dataUrl, rawImageUrl: dataUrl })
       setFireflyStatus('success')
     } catch (e) {
       setFireflyError(e instanceof Error ? e.message : '画像生成に失敗しました')
@@ -428,7 +426,7 @@ function EditorContent() {
       const wpStatus: 'draft' | 'publish' | 'future' =
         choice.type === 'future' ? 'future' : choice.type
 
-      // ── Step 1: 画像アップロード（専用エンドポイントで先に処理）
+      // ── Step 1a: 焼き込みあり画像のアップロード（アイキャッチ用）
       let preUploadedMediaId: number | undefined
       let preUploadedImageUrl: string | undefined
       const imageDataUrl = article.imageUrl
@@ -453,10 +451,43 @@ function EditorContent() {
             } else {
               setToastMessage(`⚠️ アイキャッチ画像のアップロードに失敗しました（投稿は続行します）\n${uploadData.error ?? ''}`)
             }
-          } catch (uploadErr) {
+          } catch {
             setToastMessage(`⚠️ 画像アップロードでエラーが発生しました（投稿は続行します）`)
           }
         }
+      }
+
+      // ── Step 1b: 焼き込みなし元画像のアップロード（記事本文用）
+      let rawUploadedImageUrl: string | undefined = article.rawImageUrl?.startsWith('http')
+        ? article.rawImageUrl
+        : undefined
+      const rawDataUrl = article.rawImageUrl
+      if (!rawUploadedImageUrl && rawDataUrl?.startsWith('data:') && rawDataUrl !== imageDataUrl) {
+        const rawMatches = rawDataUrl.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/)
+        if (rawMatches) {
+          const [, rawMimeType, rawBase64] = rawMatches
+          try {
+            const rawUploadRes = await fetch('/api/wordpress/upload-media', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                imageBase64: rawBase64,
+                mimeType: rawMimeType,
+                articleTitle: `${publishTitle}-raw`,
+              }),
+            })
+            const rawUploadData = await rawUploadRes.json()
+            if (rawUploadRes.ok) {
+              rawUploadedImageUrl = rawUploadData.sourceUrl
+            }
+          } catch {
+            /* raw アップロード失敗時は焼き込みあり画像にフォールバック */
+          }
+        }
+      }
+      // rawImageUrl が imageUrl と同じ data URL の場合（手動アップロード時）は焼き込みあり画像を流用
+      if (!rawUploadedImageUrl && preUploadedImageUrl) {
+        rawUploadedImageUrl = preUploadedImageUrl
       }
 
       // ── Step 2: 記事投稿（画像はURLのみ渡す）
@@ -464,6 +495,7 @@ function EditorContent() {
         title: publishTitle,
         content: contentWithLinks,
         imageUrl: preUploadedImageUrl ?? (imageDataUrl?.startsWith('data:') ? undefined : imageDataUrl),
+        rawImageUrl: rawUploadedImageUrl,
         preUploadedMediaId,
         targetKeyword: article.targetKeyword?.trim() || undefined,
         slug: slug.trim() || undefined,
@@ -534,6 +566,7 @@ function EditorContent() {
           originalContent: article.originalContent,
           refinedContent: article.refinedContent,
           imageUrl: article.imageUrl,
+          rawImageUrl: rawUploadedImageUrl ?? article.rawImageUrl,
           wordpressUrl: data.wordpressUrl,
           wordpressPostStatus: data.status,
           ...(publishedAt ? { wordpressPublishedAt: publishedAt } : {}),
@@ -562,6 +595,7 @@ function EditorContent() {
     article.refinedContent,
     article.internalLinks,
     article.imageUrl,
+    article.rawImageUrl,
     wordpressTagsInput,
     wordpressCategoryIds,
     currentArticleId,
