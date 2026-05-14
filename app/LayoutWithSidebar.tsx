@@ -49,6 +49,7 @@ export default function LayoutWithSidebar({
                 { href: '/prompts', label: 'プロンプト' },
                 { href: '/keywords', label: 'キーワード' },
                 { href: '/notice', label: '注意書き' },
+                { href: '/image-test', label: '画像テスト' },
               ].map(({ href, label }) => {
                 const isActive = pathname === href || pathname.startsWith(href + '/')
                 return (
