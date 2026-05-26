@@ -107,14 +107,32 @@ async function uploadBase64ImageToWordPress(
 /**
  * インライン書式: **太字** のみサポート。
  * 太字はテーマに馴染む黒（本文色）で表示。色付き太字や下線は参考サイトに倣い廃止。
+ *
+ * 注意: 段落テキストの大部分（80%超 または 40文字超の単一strong）が
+ * <strong> で括られている場合はWordPressテーマのボックスCSSが適用されるため、
+ * <strong> を除去して通常テキストとして表示する。
  */
 function applyInlineFormatting(text: string): string {
-  return text
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+  let result = text
+    .replace(/\*\*(.+?)\*\*/gs, '<strong>$1</strong>')
     .replace(/__(.+?)__/g, '$1')
     .replace(/\*([^*]+?)\*/g, '<em>$1</em>')
-    // 閉じ忘れなどで残った生の ** は投稿前に除去する
     .replace(/\*\*/g, '');
+
+  // 段落全体がほぼ <strong> 1つで覆われている場合はボックス表示を防ぐため除去
+  // パターン: <strong>テキスト</strong> がテキスト全体の85%以上を占める
+  const fullStrongMatch = result.match(/^<strong>([\s\S]+)<\/strong>$/);
+  if (fullStrongMatch) {
+    const innerText = fullStrongMatch[1] ?? '';
+    // 1文のみ（40文字以下）かつ文末が句点/感嘆符/疑問符で終わる短い要約文は許可
+    const isSummaryLine = innerText.length <= 40 && /[。！？]$/.test(innerText.trim());
+    if (!isSummaryLine) {
+      // 長い段落全体の太字は除去（テーマのボックスCSSを回避）
+      result = innerText;
+    }
+  }
+
+  return result;
 }
 
 /** リスト行「・ラベル: 説明」のラベル部分を太字に（・で始まる行のみ対象） */

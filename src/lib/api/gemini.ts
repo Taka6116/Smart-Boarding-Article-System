@@ -191,6 +191,18 @@ function stripBannerPlaceholders(content: string): string {
   return content.replace(/\[ここに[^\]]*画像バナーを配置\]/g, '').replace(/\n{3,}/g, '\n\n')
 }
 
+/**
+ * 段落全体を **〜** で括っている「長い太字段落」を通常テキストに戻す。
+ * WordPressテーマがこの構造を青いボックスとして表示するのを防ぐ。
+ *
+ * 許可: **短い要約文（40文字以下）** のみ太字のまま
+ * 除去: **長い説明文（41文字以上）** は ** を除去して通常テキストにする
+ */
+function stripFullParagraphBold(content: string): string {
+  if (!content) return content
+  return content.replace(/\*\*([^*]{41,}?)\*\*/gs, (_, inner: string) => inner)
+}
+
 /** プロンプトと参照データから一次執筆（タイトル＋本文）を生成する */
 export async function generateFirstDraftFromPrompt(
   userPrompt: string,
@@ -376,6 +388,7 @@ P（結論）→ R（理由）→ E（Smart Boarding・FCEの事例・具体例�
   }
   content = stripPrepLabels(content)
   content = stripBannerPlaceholders(content)
+  content = stripFullParagraphBold(content)
 
   try {
     const firstSentence = extractFirstSentence(content)
@@ -506,6 +519,11 @@ ${targetKeyword?.trim() ? `ターゲットキーワード：${targetKeyword}` : 
   ・悪い例：「1. **このセクションでは…**」のように見出し行に太字を入れる、「**効果:**」「**課題:**」のようにラベル＋コロンだけを太字で連打するUI風の体裁
   → 流し読みする読者が太字1文だけで章の内容を把握できるようにする。
 
+  【重要】段落全体（2文以上、または40文字超）を **〜** で括ることは絶対禁止。
+  ・禁止例：「**OJT（On-the-Job Training）：実際の業務を通じて、上司や先輩から指導を受ける方法です。実践的で即効性がありますが、指導者の育成や負担軽減が課題となることもあります。**」
+  ・許可例：「**このセクションでは人材開発の3つの柱を解説します。**」（1文のみ、簡潔）
+  → 長い説明・詳述は必ず太字なしの通常文章で書くこと。太字は短い要約1文のみ。
+
 ■■ PHASE 4: コンバージョン導線の自然な設計 ■■
 
 □ 末尾CTAだけでなく、本文中盤に自然な誘導を1箇所挿入する。
@@ -594,6 +612,7 @@ ${targetKeyword?.trim() ? `ターゲットキーワード：${targetKeyword}` : 
   refinedContent = stripSupervisorText(refinedContent)
   refinedContent = stripPrepLabels(refinedContent)
   refinedContent = stripBannerPlaceholders(refinedContent)
+  refinedContent = stripFullParagraphBold(refinedContent)
 
   const afterMetrics = measureArticleQuality('推敲後', refinedContent)
   console.log(`[推敲改善] 太字: ${beforeMetrics.boldCount}→${afterMetrics.boldCount}, 数値: ${beforeMetrics.numberCount}→${afterMetrics.numberCount}, SB言及: ${beforeMetrics.sbMentions}→${afterMetrics.sbMentions}`)
