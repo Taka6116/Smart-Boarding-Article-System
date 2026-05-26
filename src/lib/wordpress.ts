@@ -334,7 +334,9 @@ export function convertToHtml(content: string): string {
 
     // h2 見出し: "1. テキスト" — 直前が空行（段落バッファが空）の場合のみ見出しとして扱う
     // 本文中の番号リスト（"1. ..." が段落の途中にある場合）は通常テキストとして扱う
-    if (/^\d+[．.]\s/.test(trimmed) && currentParagraph.length === 0) {
+    // 注意: "5.2" のような小数点は除外（整数番号+スペースのみ対象）
+    // 正規表現: 先頭が整数のみ（小数点なし）+ 全角/半角ピリオド + スペース + 1文字以上
+    if (/^\d+[．.]\s+\S/.test(trimmed) && !/^\d+\.\d/.test(trimmed) && currentParagraph.length === 0) {
       h2Count++;
       h3Count = 0;
       const text = trimmed.replace(/^\d+[．.]\s*/, '');
@@ -343,7 +345,8 @@ export function convertToHtml(content: string): string {
     }
 
     // h3 小見出し: "1-1. テキスト" — 同様に直前が空行の場合のみ
-    if (/^\d+-\d+[．.]\s/.test(trimmed) && currentParagraph.length === 0) {
+    // 注意: "5.2" のような小数点の行は h3 には含めない（ハイフン区切りのみ対象）
+    if (/^\d+-\d+[．.]\s+\S/.test(trimmed) && currentParagraph.length === 0) {
       h3Count++;
       const text = trimmed
         .replace(/^\d+-\d+[．.]\s*/, '')
@@ -396,15 +399,25 @@ function stripHtmlAndDecodeEntities(text: string): string {
  * 返り値: { body: FAQ前の本文, faqSection: FAQセクション部分（空の場合もある） }
  */
 function splitFaqSection(content: string): { body: string; faqSection: string } {
-  // FAQ見出しとして成立する行のみを対象にする（本文中の「Q&A」言及では分離しない）
-  // "7. よくある質問（FAQ）" のような数字付き見出し形式にも対応
-  const faqHeaderRegex = /^\s*(?:#+\s*)?(?:\d+[．.]\s*)?(?:よくある質問(?:\s*[\(（]FAQ[\)）])?|FAQ|Q\s*&\s*A)\s*[:：]?\s*$/im;
-  const match = content.match(faqHeaderRegex);
-  if (match && match.index !== undefined) {
-    return {
-      body: content.slice(0, match.index).trimEnd(),
-      faqSection: content.slice(match.index).trim(),
-    };
+  // FAQ見出しとして成立する「行単独」のみを対象にする
+  // 条件: 行全体がFAQ見出しのみで構成されている（本文中の言及は分離しない）
+  // - 行頭に数字+区切り記号の見出し番号がある場合も対応（例: "7. よくある質問"）
+  // - 行末に文章が続く場合（例: "よくある質問を確認しておきましょう"）は除外
+  const lines = content.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    // 「よくある質問」単独行（Q&A・FAQの見出しとして独立している行のみ）
+    // 本文の一部として「よくある質問」が含まれる行（文章が続く）は除外
+    const isFaqHeader = /^(?:#+\s*)?(?:\d+[．.]\s*)?(?:よくある質問(?:\s*[\(（]FAQ[\)）])?|FAQ)\s*[:：]?\s*$/i.test(trimmed);
+    if (isFaqHeader) {
+      const bodyPart = lines.slice(0, i).join('\n').trimEnd();
+      const faqPart = lines.slice(i).join('\n').trim();
+      // bodyPart が空すぎる場合（誤検出の可能性）は分離しない
+      if (bodyPart.length < 100) {
+        return { body: content, faqSection: '' };
+      }
+      return { body: bodyPart, faqSection: faqPart };
+    }
   }
   return { body: content, faqSection: '' };
 }
@@ -684,16 +697,25 @@ function linkifyCtaUrls(html: string): string {
 }
 
 /**
- * 本文HTMLからテキスト版FAQ（「よくある質問」を含むH2見出し以降）を除去する。
+ * 本文HTMLからテキスト版FAQ（「よくある質問」を含むH2/H3見出し以降）を除去する。
  * アコーディオン版FAQが別途生成されるため、テキスト版は不要。
+ *
+ * 重要: 「よくある質問」は見出しタグ（<h2>/<h3>）内にある場合のみ除去対象とする。
+ * 本文段落（<p>）内に「よくある質問」という言葉が含まれても除去しない。
  */
 function stripTextFaqFromHtml(html: string): string {
   const lines = html.split('\n');
   let faqStartIdx = -1;
 
   for (let i = 0; i < lines.length; i++) {
-    const stripped = lines[i].replace(/<[^>]*>/g, '').trim();
-    if (/よくある質問/.test(stripped)) {
+    const line = lines[i];
+    // h2 または h3 タグ内に「よくある質問」が含まれる行のみ対象
+    const isHeadingLine = /^<h[23][^>]*>/i.test(line.trim());
+    if (!isHeadingLine) continue;
+
+    const stripped = line.replace(/<[^>]*>/g, '').trim();
+    // 見出し行の中で「よくある質問」単独（文章の一部ではない）
+    if (/^(?:\d+[．.]\s*)?よくある質問(?:\s*[\(（]FAQ[\)）])?\s*[:：]?\s*$/.test(stripped)) {
       faqStartIdx = i;
       break;
     }
@@ -701,7 +723,7 @@ function stripTextFaqFromHtml(html: string): string {
 
   if (faqStartIdx < 0) return html;
 
-  // 「よくある質問」を含む行以降を全て除去
+  // 「よくある質問」を含む見出し行以降を全て除去
   let cleaned = lines.slice(0, faqStartIdx).join('\n');
 
   // 末尾に残った水平線的な要素（—, ---, ―, ─）も除去
