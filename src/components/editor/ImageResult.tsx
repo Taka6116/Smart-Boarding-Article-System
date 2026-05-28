@@ -255,7 +255,7 @@ export default function ImageResult({
       <div className="flex items-center justify-between mt-8">
         <Button variant="ghost" size="md" onClick={onBack}>
           <ArrowLeft size={16} />
-          Gemini推敲に戻る
+          記事推敲に戻る
         </Button>
       </div>
     </div>

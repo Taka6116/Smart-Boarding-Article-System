@@ -8,7 +8,7 @@ interface StepIndicatorProps {
 
 const steps = [
   { number: 1 as Step, label: '一次執筆' },
-  { number: 2 as Step, label: 'Gemini推敲' },
+  { number: 2 as Step, label: '記事推敲' },
   { number: 3 as Step, label: '画像生成' },
   { number: 4 as Step, label: 'プレビュー' },
   { number: 5 as Step, label: '投稿' },

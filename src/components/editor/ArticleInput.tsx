@@ -380,7 +380,7 @@ export default function ArticleInput({
                     onClick={onNext}
                     className="py-4 px-8 h-auto"
                   >
-                    <span className="font-bold text-base">Geminiで推敲する</span>
+                    <span className="font-bold text-base">記事を推敲する</span>
                     <ArrowRight size={18} className="ml-2" />
                   </Button>
                 </div>
