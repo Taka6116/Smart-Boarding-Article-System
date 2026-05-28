@@ -9,7 +9,7 @@ import { SavedKeyword, getAllKeywords } from '@/lib/keywordStorage'
 import StepIndicator from './StepIndicator'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
-import { ArrowRight, Trash2, Sparkles, ChevronDown, Check, Target } from 'lucide-react'
+import { ArrowRight, Trash2, ChevronDown, Check, Target } from 'lucide-react'
 
 interface ArticleInputProps {
   article: ArticleData
@@ -502,21 +502,9 @@ function GeneratingLoader({ step }: { step: string }) {
     >
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/90 max-w-md w-full p-6 sm:p-8 text-left">
         <div className="flex items-start gap-4 mb-6">
-          <div
-            className="flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center border border-indigo-100"
-            style={{
-              background: '#EEF2FF',
-              boxShadow: '0 1px 2px rgba(15, 23, 42, 0.06)',
-            }}
-          >
-            <Sparkles
-              className={`w-5 h-5 text-[#1A9FCC] ${reduceMotion ? '' : 'motion-safe:opacity-90 motion-safe:animate-pulse'}`}
-              aria-hidden
-            />
-          </div>
           <div className="flex-1 min-w-0 pt-0.5">
             <h2 id="generating-loader-title" className="text-base font-bold text-[#1A1A2E] leading-snug">
-              Gemini が執筆しています
+              一次執筆しています
             </h2>
             <p className="text-xs text-[#64748B] mt-1.5 leading-relaxed">
               編集方針に沿って下書きを生成しています
