@@ -119,6 +119,17 @@ function applyInlineFormatting(text: string): string {
     .replace(/\*([^*]+?)\*/g, '<em>$1</em>')
     .replace(/\*\*/g, '');
 
+  const caseStudyLinkStyle = 'color:#0297CD;text-decoration:underline;font-weight:700;';
+  result = result
+    .replace(
+      /\[事例はこちら\]\((https:\/\/www\.smartboarding\.net\/example\/[^)\s]+)\)/g,
+      `<a href="$1" style="${caseStudyLinkStyle}">事例はこちら</a>`
+    )
+    .replace(
+      /事例はこちら\s+(https:\/\/www\.smartboarding\.net\/example\/[^\s<)）」。]+)/g,
+      `<a href="$1" style="${caseStudyLinkStyle}">事例はこちら</a>`
+    );
+
   // 段落全体が <strong> 1つで覆われている場合はボックス表示を防ぐため除去
   // パターン: <strong>テキスト</strong> がテキスト全体を占める
   const fullStrongMatch = result.match(/^<strong>([\s\S]+)<\/strong>$/);

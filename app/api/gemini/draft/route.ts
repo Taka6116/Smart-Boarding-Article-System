@@ -4,6 +4,7 @@ import { readFile } from 'fs/promises'
 import { generateFirstDraftFromPrompt } from '@/lib/api/gemini'
 import { findFileById, getFilePath } from '@/lib/dataStorage'
 import { getS3ObjectAsText, listS3Objects } from '@/lib/s3Reference'
+import { buildRelevantClientCaseStudiesBlock } from '@/lib/clientCaseStudies'
 
 /** 一次執筆で参照する S3 のプレフィックス（md / csv / txt のみ突合）。末尾スラッシュなしでも可 */
 const DRAFT_MATERIAL_EXTS = new Set(['.md', '.csv', '.txt'])
@@ -141,6 +142,11 @@ export async function POST(request: NextRequest) {
           parts.push(`--- 資料（S3）：${name} ---\n${result.content}`)
         }
       }
+    }
+
+    const caseStudiesBlock = await buildRelevantClientCaseStudiesBlock(targetKeywordStr, promptStr)
+    if (caseStudiesBlock) {
+      parts.push(caseStudiesBlock)
     }
 
     let dataContext = parts.join('\n\n')

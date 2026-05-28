@@ -59,6 +59,7 @@ import {
   getSkippedKeywordSet,
   recordFailure,
 } from '@/lib/autoRunFailures'
+import { buildRelevantClientCaseStudiesBlock } from '@/lib/clientCaseStudies'
 
 /** Node runtime 必須（@napi-rs/canvas と aws-sdk がバンドル対象） */
 export const runtime = 'nodejs'
@@ -271,9 +272,10 @@ async function processKeyword(
 
   // 1. 画面の「記事作成」ボタンと同一のプロンプトを合成。2周目以降は pastTitles を渡して重複回避
   const autoPrompt = generateAutoPrompt(kw, pastTitles)
+  const caseStudiesBlock = await buildRelevantClientCaseStudiesBlock(kw.keyword, autoPrompt)
 
   // 2. 一次執筆（Gemini → 失敗時 Claude フォールバックは gemini.ts 側で処理）
-  const draft = await generateFirstDraftFromPrompt(autoPrompt, kw.keyword, undefined)
+  const draft = await generateFirstDraftFromPrompt(autoPrompt, kw.keyword, caseStudiesBlock || undefined)
 
   // 3. 推敲
   const refined = await refineArticleWithGemini(draft.title, draft.content, kw.keyword)
