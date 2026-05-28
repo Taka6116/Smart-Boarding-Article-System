@@ -232,7 +232,7 @@ export async function generateFirstDraftFromPrompt(
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 【Smart Boarding / FCE 固定情報】
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-・末尾CTA（2行）：①「導入事例・事例集はこちらから https://www.smartboarding.net/documents/1978/」②「14日間無料トライアルはこちら https://www.smartboarding.net/trial/」をこの順で必ず含めること。
+・末尾CTA（2行）：①「導入事例・事例集はこちらから https://www.smartboarding.net/example/」②「14日間無料トライアルはこちら https://www.smartboarding.net/trial/」をこの順で必ず含めること。
 ・「[ここに〜画像バナーを配置]」のようなプレースホルダー指示は絶対に出力しないこと。画像バナーの配置はシステム側で自動処理される。
 
 ■ 個人情報・機密情報の保護（最重要・違反厳禁）
@@ -350,7 +350,7 @@ ${usedIntrosBlock}
 ❺ 末尾は必ずCTAで締める
 - まとめセクションの末尾には必ず以下の文章をそのまま使うこと（一字一句変更しないこと）：
 「Smart Boarding（スマートボーディング）は、法人向けオンライントレーニングと人財コンサルティングを組み合わせ、貴社の人財育成を中長期で伴走します。eラーニングだけでなく対面研修やOJT支援まで、お気軽にご相談ください。」
-- その直後に必ず「導入事例・事例集はこちらから https://www.smartboarding.net/documents/1978/」を含めること。
+- その直後に必ず「導入事例・事例集はこちらから https://www.smartboarding.net/example/」を含めること。
 - さらにその次の行に「14日間無料トライアルはこちら https://www.smartboarding.net/trial/」を必ず含めること。
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -443,7 +443,7 @@ function measureArticleQuality(label: string, content: string): {
     ? Math.round(sentences.reduce((sum, s) => sum + s.trim().length, 0) / sentences.length)
     : 0
   const sbMentions = (content.match(/Smart Boarding|スマートボーディング|FCE/g) ?? []).length
-  const ctaPresent = content.includes('smartboarding.net/documents/1978') && content.includes('smartboarding.net/trial')
+  const ctaPresent = (content.includes('smartboarding.net/example') || content.includes('導入事例・事例集はこちらから')) && content.includes('smartboarding.net/trial')
 
   console.log(`[推敲品質] ${label}: 太字=${boldCount}, 数値=${numberCount}, 平均文長=${avgSentenceLen}字, SB言及=${sbMentions}, CTA=${ctaPresent ? '✓' : '✗'}`)
   return { boldCount, numberCount, avgSentenceLen, sbMentions, ctaPresent }
@@ -475,7 +475,7 @@ export async function refineArticleWithGemini(
 ・累計1,200社超の導入実績
 ・eラーニング（LMS）＋ 対面研修 ＋ OJT支援のハイブリッドモデル
 ・14日間無料トライアル提供中
-・導入事例・事例集公開中（https://www.smartboarding.net/documents/1978/）
+・導入事例・事例集公開中（https://www.smartboarding.net/example/）
 ・新入社員〜管理職まで階層別プログラム対応
 ・学習進捗の可視化・レポーティング機能あり
 ・FCEの人財コンサルタントが研修設計〜運用を一貫伴走
@@ -566,7 +566,7 @@ ${targetKeyword?.trim() ? `ターゲットキーワード：${targetKeyword}` : 
   → 押し売り感を出さない。あくまで「もっと詳しく知りたい人はこちら」という情報提供の姿勢。
 
 □ 末尾の固定CTA（下記2行）は必ず維持すること：
-  ・「導入事例・事例集はこちらから https://www.smartboarding.net/documents/1978/」
+  ・「導入事例・事例集はこちらから https://www.smartboarding.net/example/」
   ・「14日間無料トライアルはこちら https://www.smartboarding.net/trial/」
 
 ■■ PHASE 5: 読みやすさ・感情設計 ■■

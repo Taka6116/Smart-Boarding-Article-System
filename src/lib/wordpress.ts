@@ -702,17 +702,30 @@ function generateExcerpt(content: string): string {
 /** 本文HTML内の末尾CTAをハイパーリンクに変換（WordPress投稿でクリック可能にする） */
 function linkifyCtaUrls(html: string): string {
   return html
+    // 「導入事例・事例集はこちらから URL」形式（旧URLも含め吸収）
     .replace(
-      /導入事例・事例集はこちらから\s+https?:\/\/www\.smartboarding\.net\/documents\/1978\/?/g,
-      '<a href="https://www.smartboarding.net/documents/1978/">導入事例・事例集はこちらから</a>'
+      /導入事例・事例集はこちらから\s+https?:\/\/[^\s<]*/g,
+      '<a href="https://www.smartboarding.net/example/">導入事例・事例集はこちらから</a>'
     )
+    // URLなしで「導入事例・事例集はこちらから」だけの場合もリンク化
+    .replace(
+      /(?<!href="[^"]*>)導入事例・事例集はこちらから(?!\s*https?)/g,
+      '<a href="https://www.smartboarding.net/example/">導入事例・事例集はこちらから</a>'
+    )
+    // 「導入事例はこちらから URL」形式
+    .replace(
+      /導入事例はこちらから\s+https?:\/\/[^\s<]*/g,
+      '<a href="https://www.smartboarding.net/example/">導入事例はこちらから</a>'
+    )
+    // 14日間無料トライアル
     .replace(
       /14日間無料トライアルはこちら\s+https?:\/\/www\.smartboarding\.net\/trial\/?/g,
       '<a href="https://www.smartboarding.net/trial/">14日間無料トライアルはこちら</a>'
     )
+    // URLなしで「14日間無料トライアルはこちら」だけの場合もリンク化
     .replace(
-      /導入事例はこちらから\s+https?:\/\/nihon-teikei\.co\.jp\/news\/casestudy\/?/g,
-      '<a href="https://www.smartboarding.net/documents/1978/">導入事例はこちらから</a>'
+      /(?<!href="[^"]*>)14日間無料トライアルはこちら(?!\s*https?)/g,
+      '<a href="https://www.smartboarding.net/trial/">14日間無料トライアルはこちら</a>'
     );
 }
 
