@@ -363,15 +363,16 @@ export function convertToHtml(content: string): string {
       continue;
     }
 
-    // h3 小見出し: "1-1. テキスト" — 同様に直前が空行の場合のみ
+    // h3 小見出し: "1-1. テキスト" — 直前が空行の場合のみ
     // 注意: "5.2" のような小数点の行は h3 には含めない（ハイフン区切りのみ対象）
+    // 方針: 人間ライターのコラムに寄せるため、H3小見出しは「番号プレフィックスを除去した本文」として段落化する。
+    // これにより目次（rTOC）が肥大化せず、自然な読み物として表示される。
     if (/^\d+-\d+[．.]\s+\S/.test(trimmed) && currentParagraph.length === 0) {
-      h3Count++;
       const text = trimmed
         .replace(/^\d+-\d+[．.]\s*/, '')
         .replace(/\*\*(.+?)\*\*/g, '$1')
         .replace(/\*\*/g, '');
-      htmlLines.push(`<h3 id="section-${h2Count}-${h3Count}" style="${H3_STYLE}">${text}</h3>`);
+      currentParagraph.push(text);
       continue;
     }
 
