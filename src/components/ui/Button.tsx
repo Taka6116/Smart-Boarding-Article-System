@@ -13,7 +13,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    'bg-[#C0392B] text-white hover:bg-[#a93226] border border-[#C0392B] hover:border-[#a93226]',
+    'text-white border-0 shadow-md hover:shadow-lg hover:brightness-110 transition-all duration-200',
   ghost:
     'bg-transparent text-[#1A9FCC] border border-[#E2E8F0] hover:bg-[#F5F7FA] hover:border-[#1A9FCC]',
   navy:
@@ -37,10 +37,15 @@ export default function Button({
 }: ButtonProps) {
   const isDisabled = disabled || loading
 
+  const primaryGradientStyle = variant === 'primary'
+    ? { background: 'linear-gradient(135deg, #1565C0 0%, #1A9FCC 60%, #0D47A1 100%)' }
+    : {}
+
   return (
     <button
       {...props}
       disabled={isDisabled}
+      style={primaryGradientStyle}
       className={`
         inline-flex items-center justify-center gap-2
         font-semibold rounded-lg

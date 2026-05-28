@@ -320,10 +320,7 @@ export default function ArticleInput({
                   {generating ? (
                     <span className="font-bold text-base">記事を作成中...</span>
                   ) : (
-                    <>
-                      <Sparkles size={18} className="mr-2" />
-                      <span className="font-bold text-base">記事作成</span>
-                    </>
+                    <span className="font-bold text-base">記事作成</span>
                   )}
                 </Button>
               </div>
