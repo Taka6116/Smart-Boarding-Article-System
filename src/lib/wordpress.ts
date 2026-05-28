@@ -219,14 +219,20 @@ function normalizeStandaloneH2PlainText(trimmed: string): string {
 function isStandaloneH2Candidate(trimmed: string, lineIndex: number, prevRaw: string, paragraphLen: number): boolean {
   if (paragraphLen !== 0) return false;
   if (isDecorativeSeparatorLine(trimmed)) return false;
+  // 太字を除去したプレーンテキストが40字超なら見出しにしない（長文がH2になる誤判定を防ぐ）
+  const plainLen = trimmed.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*\*/g, '').length;
+  if (plainLen > 40) return false;
   if (STANDALONE_H2_REGEXES.some(re => re.test(trimmed))) return true;
   // 短文タイトル行: 直前行が空行または区切り線のときのみ（先頭行は対象外）
+  // 太字ラベル「**〜:**」の後に説明文が続くパターンは見出しにしない
+  const plainForCheck = trimmed.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*\*/g, '');
   if (
     lineIndex > 0 &&
-    trimmed.length > 0 &&
-    trimmed.length <= 30 &&
-    !/[。、．！？]$/.test(trimmed) &&
-    !/(?:です|ます|ません|でしょう|ました)$/.test(trimmed)
+    plainForCheck.length > 0 &&
+    plainForCheck.length <= 30 &&
+    !/[。、．！？]$/.test(plainForCheck) &&
+    !/(?:です|ます|ません|でしょう|ました)$/.test(plainForCheck) &&
+    !/[:：]/.test(plainForCheck)  // コロンを含む「Show: 説明」形式は見出し候補から除外
   ) {
     const pt = prevRaw.trim();
     if (pt === '' || pt === '---' || /^-{3,}$/.test(pt)) return true;
@@ -354,13 +360,17 @@ export function convertToHtml(content: string): string {
     // h2 見出し: "1. テキスト" — 直前が空行（段落バッファが空）の場合のみ見出しとして扱う
     // 本文中の番号リスト（"1. ..." が段落の途中にある場合）は通常テキストとして扱う
     // 注意: "5.2" のような小数点は除外（整数番号+スペースのみ対象）
-    // 正規表現: 先頭が整数のみ（小数点なし）+ 全角/半角ピリオド + スペース + 1文字以上
+    // 注意: 番号除去後のテキストが40字超の場合は「説明文」として段落扱いにする（長文H2防止）
     if (/^\d+[．.]\s+\S/.test(trimmed) && !/^\d+\.\d/.test(trimmed) && currentParagraph.length === 0) {
-      h2Count++;
-      h3Count = 0;
       const text = trimmed.replace(/^\d+[．.]\s*/, '');
-      htmlLines.push(`<h2 id="section-${h2Count}" style="${H2_STYLE}">${applyInlineFormatting(text)}</h2>`);
-      continue;
+      const plainText = text.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*\*/g, '');
+      if (plainText.length <= 40) {
+        h2Count++;
+        h3Count = 0;
+        htmlLines.push(`<h2 id="section-${h2Count}" style="${H2_STYLE}">${applyInlineFormatting(text)}</h2>`);
+        continue;
+      }
+      // 40字超 → 段落として処理（下のcurrentParagraph.pushに流す）
     }
 
     // h3 小見出し: "1-1. テキスト" — 直前が空行の場合のみ
