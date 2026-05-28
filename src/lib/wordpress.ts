@@ -219,9 +219,6 @@ function normalizeStandaloneH2PlainText(trimmed: string): string {
 function isStandaloneH2Candidate(trimmed: string, lineIndex: number, prevRaw: string, paragraphLen: number): boolean {
   if (paragraphLen !== 0) return false;
   if (isDecorativeSeparatorLine(trimmed)) return false;
-  // 太字を除去したプレーンテキストが40字超なら見出しにしない（長文がH2になる誤判定を防ぐ）
-  const plainLen = trimmed.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*\*/g, '').length;
-  if (plainLen > 40) return false;
   if (STANDALONE_H2_REGEXES.some(re => re.test(trimmed))) return true;
   // 短文タイトル行: 直前行が空行または区切り線のときのみ（先頭行は対象外）
   // 太字ラベル「**〜:**」の後に説明文が続くパターンは見出しにしない
@@ -360,17 +357,20 @@ export function convertToHtml(content: string): string {
     // h2 見出し: "1. テキスト" — 直前が空行（段落バッファが空）の場合のみ見出しとして扱う
     // 本文中の番号リスト（"1. ..." が段落の途中にある場合）は通常テキストとして扱う
     // 注意: "5.2" のような小数点は除外（整数番号+スペースのみ対象）
-    // 注意: 番号除去後のテキストが40字超の場合は「説明文」として段落扱いにする（長文H2防止）
+    // 注意: 「**ラベル:** 説明文〜」のような太字ラベル+コロン+長文パターンは説明文なので段落扱いにする
     if (/^\d+[．.]\s+\S/.test(trimmed) && !/^\d+\.\d/.test(trimmed) && currentParagraph.length === 0) {
       const text = trimmed.replace(/^\d+[．.]\s*/, '');
       const plainText = text.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*\*/g, '');
-      if (plainText.length <= 40) {
+      // 「**ラベル:** 説明が続く」パターン（太字の直後にコロン+スペース+50字超の続き）は段落扱い
+      const isBoldLabelWithBody = /^\*\*[^*]+[:：]\*\*\s+.{30,}/.test(text) ||
+        (/\*\*[^*]+[:：]\*\*/.test(text) && plainText.length > 60);
+      if (!isBoldLabelWithBody) {
         h2Count++;
         h3Count = 0;
         htmlLines.push(`<h2 id="section-${h2Count}" style="${H2_STYLE}">${applyInlineFormatting(text)}</h2>`);
         continue;
       }
-      // 40字超 → 段落として処理（下のcurrentParagraph.pushに流す）
+      // 上記パターンに該当 → 段落として処理（下のcurrentParagraph.pushに流す）
     }
 
     // h3 小見出し: "1-1. テキスト" — 直前が空行の場合のみ
