@@ -162,7 +162,7 @@ function emphasizeListLabel(line: string): string {
 }
 
 /** プレビューと同一の見出し・本文スタイル（WordPress本文で使用） */
-const H2_STYLE = "font-size:22px;font-weight:900;margin:48px 0 16px;padding-bottom:8px;border-bottom:3px solid #33B5E5;font-family:'Noto Sans JP',sans-serif;";
+const H2_STYLE = "background:#edf7fb;border-left:5px solid #33B5E5;padding:12px 18px;font-size:20px;font-weight:700;margin:40px 0 16px;font-family:'Noto Sans JP',sans-serif;display:block;";
 const H3_STYLE = 'font-size:18px;font-weight:400;margin:32px 0 12px;color:#111;';
 const P_STYLE = 'margin-bottom:1.6em;';
 const UL_LIST_STYLE = 'list-style:none;padding-left:0;margin:16px 0;';
@@ -237,7 +237,7 @@ function isStandaloneH2Candidate(trimmed: string, lineIndex: number, prevRaw: st
   if (
     lineIndex > 0 &&
     plainForCheck.length > 0 &&
-    plainForCheck.length <= 30 &&
+    plainForCheck.length <= 40 &&
     !/[。、．！？]$/.test(plainForCheck) &&
     !/(?:です|ます|ません|でしょう|ました)$/.test(plainForCheck) &&
     !/[:：]/.test(plainForCheck)  // コロンを含む「Show: 説明」形式は見出し候補から除外
@@ -365,23 +365,28 @@ export function convertToHtml(content: string): string {
       continue;
     }
 
-    // h2 見出し: "1. テキスト" — 直前が空行（段落バッファが空）の場合のみ見出しとして扱う
-    // 本文中の番号リスト（"1. ..." が段落の途中にある場合）は通常テキストとして扱う
+    // h2 見出し: "1. テキスト" または "**1. テキスト**" (太字ラップ含む)
+    // 直前が空行（段落バッファが空）の場合のみ見出しとして扱う
     // 注意: "5.2" のような小数点は除外（整数番号+スペースのみ対象）
     // 注意: 「**ラベル:** 説明文〜」のような太字ラベル+コロン+長文パターンは説明文なので段落扱いにする
-    if (/^\d+[．.]\s+\S/.test(trimmed) && !/^\d+\.\d/.test(trimmed) && currentParagraph.length === 0) {
-      const text = trimmed.replace(/^\d+[．.]\s*/, '');
-      const plainText = text.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*\*/g, '');
-      // 「**ラベル:** 説明が続く」パターン（太字の直後にコロン+スペース+50字超の続き）は段落扱い
-      const isBoldLabelWithBody = /^\*\*[^*]+[:：]\*\*\s+.{30,}/.test(text) ||
-        (/\*\*[^*]+[:：]\*\*/.test(text) && plainText.length > 60);
-      if (!isBoldLabelWithBody) {
-        h2Count++;
-        h3Count = 0;
-        htmlLines.push(`<h2 id="section-${h2Count}" style="${H2_STYLE}">${applyInlineFormatting(text)}</h2>`);
-        continue;
+    {
+      // Gemini が **1. テキスト** のように太字でラップする場合があるため、先に ** を除去して判定
+      const normalizedForH2 = trimmed.replace(/^\*\*(.+?)\*\*$/, '$1').replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*\*/g, '');
+      if (/^\d+[．.]\s+\S/.test(normalizedForH2) && !/^\d+\.\d/.test(normalizedForH2) && currentParagraph.length === 0) {
+        const text = normalizedForH2.replace(/^\d+[．.]\s*/, '');
+        const plainText = text.replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*\*/g, '');
+        // 「**ラベル:** 説明が続く」パターン（太字の直後にコロン+スペース+50字超の続き）は段落扱い
+        const isBoldLabelWithBody = /^\*\*[^*]+[:：]\*\*\s+.{30,}/.test(text) ||
+          (/\*\*[^*]+[:：]\*\*/.test(text) && plainText.length > 60);
+        if (!isBoldLabelWithBody) {
+          flushParagraph();
+          h2Count++;
+          h3Count = 0;
+          htmlLines.push(`<h2 id="section-${h2Count}" style="${H2_STYLE}">${applyInlineFormatting(text)}</h2>`);
+          continue;
+        }
+        // 上記パターンに該当 → 段落として処理（下のcurrentParagraph.pushに流す）
       }
-      // 上記パターンに該当 → 段落として処理（下のcurrentParagraph.pushに流す）
     }
 
     // h3 小見出し: "1-1. テキスト" — 直前が空行の場合のみ
