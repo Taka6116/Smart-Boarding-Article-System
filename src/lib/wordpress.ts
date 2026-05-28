@@ -688,11 +688,12 @@ function buildFaqSchema(faqs: Array<{ question: string; answer: string }>): stri
   return `<script type="application/ld+json">\n${JSON.stringify(schema, null, 2)}\n</script>`;
 }
 
-const EXCERPT_MAX_LENGTH = 120;
+const EXCERPT_MAX_LENGTH = 200;
 
 /**
  * 記事本文から抜粋（excerpt）を生成する。
- * FAQ より前の本文の先頭段落から最大120文字を返す（一覧のリード表示用）。
+ * FAQ より前の本文の先頭段落から、句点で自然に終わる文章を返す（一覧のリード表示用）。
+ * 文字数上限は200字。上限を超える場合は句点の切れ目で終わらせる。
  */
 function generateExcerpt(content: string): string {
   const withoutSupervisor = content;
@@ -730,7 +731,19 @@ function generateExcerpt(content: string): string {
   const plain = stripHtmlAndDecodeEntities(paragraphLines.join(' '));
   if (!plain) return '';
   if (plain.length <= EXCERPT_MAX_LENGTH) return plain;
-  return `${plain.slice(0, EXCERPT_MAX_LENGTH).trim()}…`;
+
+  // 200字以内で最後の句点（。）位置を探し、そこで自然に終わらせる
+  const candidate = plain.slice(0, EXCERPT_MAX_LENGTH);
+  const lastKuten = Math.max(
+    candidate.lastIndexOf('。'),
+    candidate.lastIndexOf('．'),
+  );
+  if (lastKuten > 60) {
+    // 句点の直後で切る（句点自体は含める）
+    return candidate.slice(0, lastKuten + 1).trim();
+  }
+  // 句点が見つからない場合は従来通り
+  return `${candidate.trim()}…`;
 }
 
 /** 本文HTML内の末尾CTAをハイパーリンクに変換（WordPress投稿でクリック可能にする） */
