@@ -702,10 +702,10 @@ export default function SchedulePage() {
                           onClick={() => setDeleteUnscheduledId(article.id)}
                           aria-label="この記事を削除"
                           title="この記事を削除"
-                          className="sbas-btn-press p-1.5 rounded-lg hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
-                          style={{ color: 'var(--sbas-border)', border: '1px solid var(--sbas-border)' }}
+                          className="sbas-btn-press p-1.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                          style={{ background: '#DC2626', color: '#ffffff', border: 'none' }}
                         >
-                          <Trash2 size={13} />
+                          <Trash2 size={13} strokeWidth={2.2} />
                         </button>
                       </div>
                     </div>

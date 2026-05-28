@@ -55,9 +55,9 @@ export default function LayoutWithSidebar({
       <aside
         className="fixed top-0 left-0 h-screen w-[220px] flex-shrink-0 z-40 flex flex-col"
         style={{
-          background: 'linear-gradient(160deg, #0c6479 0%, #0e7490 50%, #0a5568 100%)',
-          borderRight: '1px solid rgba(255,255,255,0.12)',
-          boxShadow: '4px 0 24px rgba(10,80,100,0.20)',
+          background: 'linear-gradient(160deg, #38BDF8 0%, #06B6D4 45%, #0891B2 100%)',
+          borderRight: '1px solid rgba(255,255,255,0.18)',
+          boxShadow: '4px 0 24px rgba(8,145,178,0.28)',
         }}
       >
         {/* ヘッダー */}
