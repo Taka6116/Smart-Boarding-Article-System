@@ -52,3 +52,73 @@ h1, h2, h3, h4, h5, h6 {
   0%, 100% { opacity: 1;   transform: scale(1); }
   50%       { opacity: 0.5; transform: scale(0.85); }
 }
+
+/* ─── SBAS Design Tokens ─────────────────────────────── */
+:root {
+  --sbas-bg:              #f6f9fc;
+  --sbas-bg-soft:         #eef7fb;
+  --sbas-surface:         #ffffff;
+  --sbas-surface-muted:   #f8fbfd;
+  --sbas-text:            #101828;
+  --sbas-text-muted:      #667085;
+  --sbas-border:          rgba(15, 23, 42, 0.08);
+  --sbas-border-strong:   rgba(14, 116, 144, 0.22);
+  --sbas-primary:         #0891b2;
+  --sbas-primary-strong:  #0e7490;
+  --sbas-primary-soft:    rgba(8, 145, 178, 0.10);
+  --sbas-success:         #16a34a;
+  --sbas-warning:         #d97706;
+  --sbas-neutral:         #64748b;
+  --sbas-radius-panel:    10px;
+  --sbas-radius-control:  8px;
+  --sbas-shadow-ring:     0 0 0 1px rgba(15, 23, 42, 0.08);
+  --sbas-shadow-panel:    0 0 0 1px rgba(15, 23, 42, 0.08), 0 18px 45px rgba(15, 23, 42, 0.07);
+  --sbas-shadow-row:      0 0 0 1px rgba(15, 23, 42, 0.07), 0 8px 22px rgba(15, 23, 42, 0.045);
+}
+
+/* ─── Reduced Motion ────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration:   0.01ms !important;
+    transition-duration:  0.01ms !important;
+    scroll-behavior:      auto   !important;
+  }
+}
+
+/* ─── SBAS Utility Classes ──────────────────────────── */
+
+/* row: 未設定記事 & テーブル行 */
+.sbas-row-hover {
+  transition: box-shadow 140ms ease, transform 140ms ease, background 140ms ease;
+}
+.sbas-row-hover:hover {
+  background: var(--sbas-surface-muted) !important;
+  box-shadow: var(--sbas-shadow-row) !important;
+  transform: translateY(-1px);
+}
+
+/* button press */
+.sbas-btn-press {
+  transition: transform 90ms ease, opacity 90ms ease;
+}
+.sbas-btn-press:active {
+  transform: scale(.98);
+}
+
+/* calendar day */
+.sbas-cal-day {
+  transition: background 140ms ease, box-shadow 140ms ease;
+}
+.sbas-cal-day:not(.sbas-cal-day-selected):hover {
+  background: var(--sbas-primary-soft) !important;
+}
+.sbas-cal-day-selected {
+  background: var(--sbas-primary) !important;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--sbas-primary) !important;
+}
+
+/* focus-visible ring (global補完) */
+.sbas-focus:focus-visible {
+  outline: 2px solid var(--sbas-primary);
+  outline-offset: 2px;
+}

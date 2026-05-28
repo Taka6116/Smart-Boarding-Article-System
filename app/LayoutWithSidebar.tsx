@@ -45,11 +45,9 @@ export default function LayoutWithSidebar({
       <aside
         className="fixed top-0 left-0 h-screen w-[220px] flex-shrink-0 z-40 flex flex-col"
         style={{
-          background: 'linear-gradient(160deg, rgba(51,181,229,0.92) 0%, rgba(26,159,204,0.88) 50%, rgba(28,90,160,0.85) 100%)',
-          backdropFilter: 'blur(20px) saturate(1.6)',
-          WebkitBackdropFilter: 'blur(20px) saturate(1.6)',
-          borderRight: '1px solid rgba(255,255,255,0.25)',
-          boxShadow: '4px 0 32px rgba(26,100,180,0.18), inset -1px 0 0 rgba(255,255,255,0.12)',
+          background: 'linear-gradient(160deg, #0c6479 0%, #0e7490 50%, #0a5568 100%)',
+          borderRight: '1px solid rgba(255,255,255,0.12)',
+          boxShadow: '4px 0 24px rgba(10,80,100,0.20)',
         }}
       >
         {/* ヘッダー */}
@@ -92,13 +90,13 @@ export default function LayoutWithSidebar({
                 className="flex items-center px-3 py-2.5 rounded-xl text-[14px] font-semibold transition-all duration-200"
                 style={isActive ? {
                   color: '#FFFFFF',
-                  background: 'rgba(255,255,255,0.22)',
-                  boxShadow: '0 2px 12px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.3)',
-                  backdropFilter: 'blur(8px)',
-                  borderLeft: '3px solid rgba(255,255,255,0.7)',
+                  background: 'rgba(255,255,255,0.14)',
+                  border: '1px solid rgba(255,255,255,0.20)',
+                  borderLeft: '3px solid rgba(255,255,255,0.75)',
                 } : {
-                  color: 'rgba(255,255,255,0.82)',
+                  color: 'rgba(255,255,255,0.75)',
                   background: 'transparent',
+                  border: '1px solid transparent',
                   borderLeft: '3px solid transparent',
                 }}
               >
