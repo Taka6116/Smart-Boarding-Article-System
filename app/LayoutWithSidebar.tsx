@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import MainContentWidth from './MainContentWidth'
 
 export default function LayoutWithSidebar({
@@ -11,7 +11,14 @@ export default function LayoutWithSidebar({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  const router = useRouter()
   const isLogin = pathname === '/login'
+
+  async function handleLogout() {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    router.push('/login')
+    router.refresh()
+  }
 
   if (isLogin) {
     return (
@@ -97,7 +104,21 @@ export default function LayoutWithSidebar({
                 {label}
               </Link>
             )
-          })}
+              })}
+
+          {/* ログアウト */}
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center px-3 py-2.5 rounded-xl text-[14px] font-semibold transition-all duration-200 mt-2"
+            style={{
+              color: 'rgba(255,255,255,0.65)',
+              background: 'transparent',
+              borderLeft: '3px solid transparent',
+              border: '1px solid rgba(255,255,255,0.15)',
+            }}
+          >
+            ログアウト
+          </button>
         </nav>
 
         {/* フッター */}
