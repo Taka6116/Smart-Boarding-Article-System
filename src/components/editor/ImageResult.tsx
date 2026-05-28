@@ -7,7 +7,7 @@ import { ArticleData, ProcessingState, Step } from '@/lib/types'
 import StepIndicator from './StepIndicator'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
-import { ArrowLeft, ArrowRight, Clock, Download, RefreshCw, Sparkles, Upload } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Clock, Download, RefreshCw, Upload } from 'lucide-react'
 import { setSessionPreviewImage } from '@/lib/sessionPreviewImage'
 import { compositeArticleTitleOnImage } from '@/lib/compositeArticleTitleOnImage'
 
@@ -350,7 +350,6 @@ function PreviewNavigationOverlay({ active }: { active: boolean }) {
               transform="rotate(-90 50 50)"
             />
           </svg>
-          <Sparkles className="relative w-9 h-9 text-[#1A9FCC]" strokeWidth={1.75} aria-hidden />
         </div>
 
         <h2 className="text-base sm:text-lg font-bold text-[#1A1A2E] leading-snug tracking-tight px-1">
@@ -414,7 +413,6 @@ function ImageGenerationLoader() {
               transform="rotate(-90 50 50)"
             />
           </svg>
-          <Sparkles className="relative w-9 h-9 text-[#1A9FCC]" strokeWidth={1.75} aria-hidden />
         </div>
 
         <h2 className="text-lg sm:text-xl font-bold text-[#1A1A2E] leading-snug tracking-tight">

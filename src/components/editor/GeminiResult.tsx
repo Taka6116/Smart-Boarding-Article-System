@@ -148,7 +148,7 @@
                  <div className="flex items-center justify-between px-5 py-3 border-b border-[#E2E8F0]">
                    <div className="flex items-center gap-2">
                      <span className="text-xs font-semibold text-[#16A34A] uppercase tracking-wider">
-                       Gemini 改善後
+                       記事推敲後
                      </span>
                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
                        AI推敲済み
