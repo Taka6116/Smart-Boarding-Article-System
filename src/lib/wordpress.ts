@@ -449,6 +449,30 @@ function splitFaqSection(content: string): { body: string; faqSection: string } 
       return { body: bodyPart, faqSection: faqPart };
     }
   }
+  // フォールバック: 「よくある質問」見出しがなくても
+  // 「Q.」「Q1.」形式の行が3行以上連続する最初の箇所を FAQセクション開始とみなす
+  let qCount = 0;
+  let firstQIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const t = lines[i].trim();
+    if (/^Q[\d.．\s]/.test(t)) {
+      if (qCount === 0) firstQIdx = i;
+      qCount++;
+    } else if (t === '' || /^A[\d.．\s]/.test(t)) {
+      // A. 行や空行はカウント継続
+    } else {
+      qCount = 0;
+      firstQIdx = -1;
+    }
+    if (qCount >= 3 && firstQIdx >= 0) {
+      const bodyPart = lines.slice(0, firstQIdx).join('\n').trimEnd();
+      const faqPart = lines.slice(firstQIdx).join('\n').trim();
+      if (bodyPart.length >= 100) {
+        return { body: bodyPart, faqSection: faqPart };
+      }
+    }
+  }
+
   return { body: content, faqSection: '' };
 }
 
@@ -764,17 +788,24 @@ function stripTextFaqFromHtml(html: string): string {
     }
   }
 
-  if (faqStartIdx < 0) return html;
-
-  // 「よくある質問」を含む見出し行以降を全て除去
-  let cleaned = lines.slice(0, faqStartIdx).join('\n');
+  // 「よくある質問」H2/H3見出しが見つかった場合はその行以降を除去
+  let cleaned = faqStartIdx >= 0
+    ? lines.slice(0, faqStartIdx).join('\n')
+    : html;
 
   // 末尾に残った水平線的な要素（—, ---, ―, ─）も除去
   cleaned = cleaned.replace(/<p[^>]*>\s*[—―─\-]{1,5}\s*<\/p>\s*$/i, '');
 
-  // 末尾に残ったQ&Aテキストブロックも除去
+  // 見出しなしで本文末尾に直接埋め込まれた Q. / A. 形式のテキストブロックを除去
+  // 「Q.」または「Q 」で始まる段落が出現した時点以降を全て除去する
   cleaned = cleaned.replace(
-    /(?:<p[^>]*>\s*(?:<strong>)?Q\d*[.．]\s*[\s\S]*?)$/i,
+    /(?:<p[^>]*>\s*(?:<strong>)?Q[\d.．\s][^]*?)$/i,
+    ''
+  );
+
+  // まとめ段落の直後に Q. テキストが残っていないか念のため再確認（改行混じりのケース）
+  cleaned = cleaned.replace(
+    /(\n|<br\s*\/?>)\s*Q[\d.．\s].+?(?=<|$)/gis,
     ''
   );
 
