@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Sparkles } from 'lucide-react'
 
 const STEPS = [
   { label: '記事を読み込んでいます',      detail: '文章構造・段落・キーワードを解析中...' },
@@ -85,15 +84,13 @@ export default function GeminiLoadingCard() {
             }}
           />
           <div
-            className="absolute inset-4 rounded-full flex items-center justify-center"
+            className="absolute inset-4 rounded-full"
             style={{ background: '#FDF0EE' }}
-          >
-            <Sparkles size={20} style={{ color: '#C0392B' }} />
-          </div>
+          />
         </div>
 
         <h3 className="text-lg font-bold mb-1" style={{ color: '#1A1A2E' }}>
-          Gemini が記事を推敲中{dots}
+          記事を推敲中{dots}
         </h3>
         <p className="text-sm" style={{ color: '#64748B' }}>
           AIが品質・読みやすさ・SEOを自動改善しています
