@@ -96,22 +96,24 @@ export async function compositeArticleTitleOnImageServer(
   ctx.fillStyle = grad
   ctx.fillRect(0, H - gradH, W, gradH)
 
-  const pad = W * 0.04
+  const pad = W * 0.06
   const maxW = W - pad * 2
-  const fontSize = Math.round(W * 0.055)
+  const fontSize = Math.round(W * 0.042)
   ctx.font = `bold ${fontSize}px "NotoSansJPBold","Noto Sans JP","Hiragino Sans","Yu Gothic",sans-serif`
   ctx.fillStyle = '#FFFFFF'
-  ctx.shadowColor = 'rgba(0,0,0,0.55)'
-  ctx.shadowBlur = 10
+  ctx.shadowColor = 'rgba(0,0,0,0.65)'
+  ctx.shadowBlur = 12
+  ctx.textAlign = 'center'
 
   const lines = wrapTitleLines(ctx, titleText, maxW, { maxLines: 4 })
 
-  const lh = fontSize * 1.42
+  const lh = fontSize * 1.45
   const totalH = lines.length * lh
   const centerX = W / 2
-  const startY = H * 0.55 - totalH / 2 + fontSize
+  // 画像下部 20% 〜 45% の中央に配置（文字が確実に収まる範囲）
+  const bottomAreaCenter = H * 0.82
+  const startY = bottomAreaCenter - totalH / 2 + fontSize
 
-  ctx.textAlign = 'center'
   lines.forEach((line, i) => {
     ctx.fillText(line, centerX, startY + i * lh)
   })

@@ -35,6 +35,7 @@ export async function compositeArticleTitleOnImage(
       ctx.fillStyle = '#FFFFFF'
       ctx.shadowColor = 'rgba(0,0,0,0.55)'
       ctx.shadowBlur = 10
+      ctx.textAlign = 'center'
 
       const lines = wrapTitleLines(ctx, titleText, maxW, { maxLines: 4 })
 
@@ -42,8 +43,9 @@ export async function compositeArticleTitleOnImage(
       const totalH = lines.length * lh
       const startY = H - pad - totalH + fontSize
 
+      const centerX = W / 2
       lines.forEach((line, i) => {
-        ctx.fillText(line, pad, startY + i * lh)
+        ctx.fillText(line, centerX, startY + i * lh)
       })
 
       resolve(canvas.toDataURL('image/jpeg', 0.92))

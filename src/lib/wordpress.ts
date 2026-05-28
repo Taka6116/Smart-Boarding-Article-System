@@ -119,15 +119,16 @@ function applyInlineFormatting(text: string): string {
     .replace(/\*([^*]+?)\*/g, '<em>$1</em>')
     .replace(/\*\*/g, '');
 
-  // 段落全体がほぼ <strong> 1つで覆われている場合はボックス表示を防ぐため除去
-  // パターン: <strong>テキスト</strong> がテキスト全体の85%以上を占める
+  // 段落全体が <strong> 1つで覆われている場合はボックス表示を防ぐため除去
+  // パターン: <strong>テキスト</strong> がテキスト全体を占める
   const fullStrongMatch = result.match(/^<strong>([\s\S]+)<\/strong>$/);
   if (fullStrongMatch) {
     const innerText = fullStrongMatch[1] ?? '';
-    // 1文のみ（40文字以下）かつ文末が句点/感嘆符/疑問符で終わる短い要約文は許可
-    const isSummaryLine = innerText.length <= 40 && /[。！？]$/.test(innerText.trim());
-    if (!isSummaryLine) {
-      // 長い段落全体の太字は除去（テーマのボックスCSSを回避）
+    const hasNewline = innerText.includes('\n') || innerText.includes('<br');
+    const tooLong = innerText.replace(/<[^>]*>/g, '').replace(/\s/g, '').length > 40;
+    const multiSentence = (innerText.match(/。/g) ?? []).length >= 2;
+    // いずれかに該当する場合は <strong> を除去（テーマのボックスCSSを回避）
+    if (hasNewline || tooLong || multiSentence) {
       result = innerText;
     }
   }
