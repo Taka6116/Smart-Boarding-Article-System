@@ -25,7 +25,8 @@ export default function LayoutWithSidebar({
       <div
         className="flex-1 flex items-center justify-center min-h-screen px-4"
         style={{
-          background: 'linear-gradient(135deg, #E8F4FA 0%, #F5F7FA 40%, #EAF6FB 70%, #D6EEF8 100%)',
+          background: 'radial-gradient(ellipse at 30% 20%, #4FC3F7 0%, #1976D2 40%, #0D47A1 75%, #01579B 100%)',
+          minHeight: '100vh',
         }}
       >
         {children}
