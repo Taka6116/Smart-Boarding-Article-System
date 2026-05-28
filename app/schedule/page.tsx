@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { SavedArticle } from '@/lib/types'
 import { resolveCanonicalPostSlug } from '@/lib/slugNormalize'
-import { getAllArticles, saveArticle } from '@/lib/articleStorage'
+import { getAllArticles, saveArticle, deleteArticle } from '@/lib/articleStorage'
 import {
   ChevronLeft,
   ChevronRight,
@@ -91,6 +91,7 @@ export default function SchedulePage() {
   const [selectedDate, setSelectedDate] = useState(toYMD(today))
   const [articles, setArticles] = useState<SavedArticle[]>([])
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
+  const [deleteUnscheduledId, setDeleteUnscheduledId] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
   const [publishingId, setPublishingId] = useState<string | null>(null)
   const [publishResult, setPublishResult] = useState<{ articleId: string; success: boolean; message: string } | null>(null)
@@ -267,10 +268,49 @@ export default function SchedulePage() {
     setDeleteTargetId(null)
   }
 
+  const handleDeleteUnscheduledConfirmed = async () => {
+    if (!deleteUnscheduledId) return
+    await deleteArticle(deleteUnscheduledId)
+    setArticles(await getAllArticles())
+    setDeleteUnscheduledId(null)
+  }
+
   if (!mounted) return null
 
   return (
     <div className="w-full pt-6 pb-12 px-2">
+      {deleteUnscheduledId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div
+            className="w-full max-w-sm rounded-xl p-5"
+            style={{ background: 'white', border: '1px solid #E2E8F0' }}
+          >
+            <p className="text-sm font-semibold mb-1" style={{ color: '#1A1A2E' }}>
+              この記事を削除しますか？
+            </p>
+            <p className="text-xs mb-4" style={{ color: '#94A3B8' }}>
+              削除すると元に戻せません
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={handleDeleteUnscheduledConfirmed}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white"
+                style={{ background: '#DC2626' }}
+              >
+                削除する
+              </button>
+              <button
+                onClick={() => setDeleteUnscheduledId(null)}
+                className="px-4 py-2 rounded-lg text-sm font-medium"
+                style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#64748B' }}
+              >
+                キャンセル
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {deleteTargetId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
           <div
@@ -868,9 +908,7 @@ export default function SchedulePage() {
                           この日に設定：
                         </span>
                         <button
-                          onClick={() => {
-                            handleScheduleChange(article.id, selectedDate)
-                          }}
+                          onClick={() => handleScheduleChange(article.id, selectedDate)}
                           className="text-xs px-3 py-1 rounded-lg font-medium"
                           style={{ background: '#F0F4FF', color: '#1A9FCC', border: '1px solid #C7D7FF' }}
                         >
@@ -879,6 +917,14 @@ export default function SchedulePage() {
                             day: 'numeric',
                           })}{' '}
                           に追加
+                        </button>
+                        <button
+                          onClick={() => setDeleteUnscheduledId(article.id)}
+                          className="p-1.5 rounded-lg transition-colors hover:bg-red-50"
+                          style={{ color: '#CBD5E1', border: '1px solid #E2E8F0' }}
+                          title="この記事を削除"
+                        >
+                          <Trash2 size={13} />
                         </button>
                       </div>
                     </div>
