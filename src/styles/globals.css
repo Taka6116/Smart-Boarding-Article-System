@@ -76,6 +76,36 @@ h1, h2, h3, h4, h5, h6 {
   --sbas-shadow-row:      0 0 0 1px rgba(15, 23, 42, 0.07), 0 8px 22px rgba(15, 23, 42, 0.045);
 }
 
+/* ─── Navigation loading bar ────────────────────────── */
+@keyframes sbas-bar-fill {
+  0%   { transform: scaleX(0);    opacity: 1; }
+  65%  { transform: scaleX(0.82); opacity: 1; }
+  90%  { transform: scaleX(0.96); opacity: 1; }
+  100% { transform: scaleX(1);    opacity: 0; }
+}
+
+@keyframes sbas-dot {
+  0%, 80%, 100% { opacity: 0.25; }
+  40%           { opacity: 1; }
+}
+
+.sbas-loading-bar {
+  position: fixed;
+  top: 0;
+  left: 220px;
+  right: 0;
+  height: 2px;
+  background: var(--sbas-primary);
+  transform-origin: left center;
+  animation: sbas-bar-fill 1.8s ease-in-out forwards;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.sbas-dot-1 { animation: sbas-dot 1.2s ease-in-out infinite 0s; }
+.sbas-dot-2 { animation: sbas-dot 1.2s ease-in-out infinite 0.2s; }
+.sbas-dot-3 { animation: sbas-dot 1.2s ease-in-out infinite 0.4s; }
+
 /* ─── Reduced Motion ────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

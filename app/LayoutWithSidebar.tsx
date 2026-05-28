@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import MainContentWidth from './MainContentWidth'
 
 export default function LayoutWithSidebar({
@@ -13,8 +14,17 @@ export default function LayoutWithSidebar({
   const pathname = usePathname()
   const router = useRouter()
   const isLogin = pathname === '/login'
+  const [isNavigating, setIsNavigating] = useState(false)
+
+  // ページ遷移完了でローディング解除
+  useEffect(() => {
+    setIsNavigating(false)
+  }, [pathname])
+
+  const handleNavClick = () => setIsNavigating(true)
 
   async function handleLogout() {
+    setIsNavigating(true)
     await fetch('/api/auth/logout', { method: 'POST' })
     router.push('/login')
     router.refresh()
@@ -85,10 +95,11 @@ export default function LayoutWithSidebar({
             const isActive = pathname === href || pathname.startsWith(href + '/')
             return (
               <Link
-                key={href}
-                href={href}
-                className="flex items-center px-3 py-2.5 rounded-xl text-[14px] font-semibold transition-all duration-200"
-                style={isActive ? {
+                    key={href}
+                    href={href}
+                    onClick={handleNavClick}
+                    className="flex items-center px-3 py-2.5 rounded-xl text-[14px] font-semibold transition-all duration-200"
+                    style={isActive ? {
                   color: '#FFFFFF',
                   background: 'rgba(255,255,255,0.14)',
                   border: '1px solid rgba(255,255,255,0.20)',
@@ -140,10 +151,25 @@ export default function LayoutWithSidebar({
         </div>
       </aside>
 
+      {/* ローディングバー（トップ細線） */}
+      {isNavigating && <div className="sbas-loading-bar" />}
+
       {/* メインコンテンツ */}
       <div className="ml-[220px] flex-1 flex flex-col min-h-screen">
         <main className="flex-1 flex items-center justify-center px-6 py-8">
-          <MainContentWidth>{children}</MainContentWidth>
+          {isNavigating ? (
+            <div className="flex flex-col items-center gap-4" style={{ color: 'var(--sbas-text-muted)' }}>
+              {/* 3点ドットローディング */}
+              <div className="flex items-center gap-2">
+                <span className="sbas-dot-1 w-2 h-2 rounded-full inline-block" style={{ background: 'var(--sbas-primary)' }} />
+                <span className="sbas-dot-2 w-2 h-2 rounded-full inline-block" style={{ background: 'var(--sbas-primary)' }} />
+                <span className="sbas-dot-3 w-2 h-2 rounded-full inline-block" style={{ background: 'var(--sbas-primary)' }} />
+              </div>
+              <p style={{ fontSize: 13, color: 'var(--sbas-text-muted)' }}>読み込み中</p>
+            </div>
+          ) : (
+            <MainContentWidth>{children}</MainContentWidth>
+          )}
         </main>
       </div>
     </div>
